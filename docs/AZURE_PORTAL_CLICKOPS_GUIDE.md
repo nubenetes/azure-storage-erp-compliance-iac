@@ -1,205 +1,281 @@
-# Step-by-Step Azure Portal Guide (Manual / ClickOps)
+# Guía Operativa Paso a Paso en Azure Portal (Operación Manual / ClickOps)
+# Step-by-Step Azure Portal Manual Operations Guide
 
-This guide provides exhaustive, click-by-click instructions to provision and configure the complete ERP WORM compliance and cost-optimized tiering architecture using the **Azure Portal** ([portal.azure.com](https://portal.azure.com)).
-
----
-
-## Prerequisites
-* An active **Microsoft Azure Subscription** with `Contributor` or `Owner` permissions.
-* Access to the **Spain Central (Madrid)** region.
+Esta guía detalla minuciosamente el procedimiento manual (*ClickOps*) paso a paso a través de la interfaz gráfica del **Portal de Azure** ([portal.azure.com](https://portal.azure.com)). Se incluyen los nombres exactos tanto en **Español** como en **Inglés** de cada campo, botón y pestaña, junto con la justificación técnica, legal y financiera de cada decisión.
 
 ---
 
-## Table of Contents
-1. [Step 1: Create the Resource Group](#step-1-create-the-resource-group)
-2. [Step 2: Create the Storage Account (ZRS & Security Hardening)](#step-2-create-the-storage-account-zrs--security-hardening)
-3. [Step 3: Enable Advanced Data Protection (Soft Delete & Versioning)](#step-3-enable-advanced-data-protection-soft-delete--versioning)
-4. [Step 4: Create ERP Containers (`facturas` & `pedidos`)](#step-4-create-erp-containers-facturas--pedidos)
-5. [Step 5: Configure WORM Immutability Policy (2,190 Days / 6 Years)](#step-5-configure-worm-immutability-policy-2190-days--6-years)
-6. [Step 6: Configure Automated Lifecycle Management (Tiering Rules)](#step-6-configure-automated-lifecycle-management-tiering-rules)
-7. [Step 7: Apply the `CanNotDelete` Azure Resource Lock](#step-7-apply-the-cannotdelete-azure-resource-lock)
-8. [Step 8: Verification, Test Ingestion & Permanent Policy Lock](#step-8-verification-test-ingestion--permanent-policy-lock)
+## 📋 Requisitos Previos / Prerequisites
+* Suscripción activa de **Microsoft Azure** con rol de `Propietario (Owner)` o `Colaborador (Contributor)`.
+* Permisos para aprovisionar recursos en la región **Spain Central (Madrid)**.
 
 ---
 
-## Step 1: Create the Resource Group
+## 📑 Índice de Fases Operativas
 
-1. Log in to [portal.azure.com](https://portal.azure.com).
-2. In the top search bar, type **Resource groups** and select it from the results.
-3. Click **+ Create** (top left).
-4. Configure the **Basics** tab:
-   * **Subscription**: Select your target Azure subscription.
-   * **Resource group**: Enter `rg-erp-storage-prod-spaincentral`.
-   * **Region**: Select **(Europe) Spain Central**.
-5. Switch to the **Tags** tab and add:
-   * `Workload`: `ERP-Document-Archive`
-   * `LegalCompliance`: `Codigo-de-Comercio-Art30-VeriFactu`
-   * `Country`: `Spain`
-6. Click **Review + create**, then click **Create**.
+1. [Fase 1: Creación del Grupo de Recursos (Resource Group)](#fase-1-creación-del-grupo-de-recursos-resource-group)
+2. [Fase 2: Despliegue de la Cuenta de Almacenamiento (Storage Account)](#fase-2-despliegue-de-la-cuenta-de-almacenamiento-storage-account)
+3. [Fase 3: Configuración de Protección de Datos (Soft Delete & Versionado)](#fase-3-configuración-de-protección-de-datos-soft-delete--versionado)
+4. [Fase 4: Creación de los Contenedores ERP (`facturas` y `pedidos`)](#fase-4-creación-de-los-contenedores-erp-facturas-y-pedidos)
+5. [Fase 5: Configuración de la Directiva Inmutable WORM (2.190 días / 6 años)](#fase-5-configuración-de-la-directiva-inmutable-worm-2190-días--6-años)
+6. [Fase 6: Configuración de Ciclo de Vida Automatizado (Lifecycle Tiering)](#fase-6-configuración-de-ciclo-de-vida-automatizado-lifecycle-tiering)
+7. [Fase 7: Aplicación del Bloqueo de Recurso Antiransomware (`CanNotDelete`)](#fase-7-aplicación-del-bloqueo-de-recurso-antiransomware-cannotdelete)
+8. [Fase 8: Verificación Práctica de Ingesta y Bloqueo Definitivo en Producción](#fase-8-verificación-práctica-de-ingesta-y-bloqueo-definitivo-en-producción)
 
 ---
 
-## Step 2: Create the Storage Account (ZRS & Security Hardening)
+## Fase 1: Creación del Grupo de Recursos (Resource Group)
 
-1. Navigate to your newly created resource group `rg-erp-storage-prod-spaincentral`.
-2. Click **+ Create** or **+ Add resource**, search for **Storage account**, and select **Create**.
-3. **Basics Tab**:
-   * **Subscription**: Your subscription.
-   * **Resource group**: `rg-erp-storage-prod-spaincentral`.
-   * **Storage account name**: Enter a unique name, e.g., `sterpspainprod01` (3–24 lowercase alphanumerics).
-   * **Region**: **(Europe) Spain Central**.
-   * **Primary service**: **Azure Blob Storage or Azure Data Lake Storage Gen 2**.
-   * **Performance**: **Standard** (general-purpose v2).
-   * **Redundancy**: Select **Zone-redundant storage (ZRS)**.
-     *(ZRS replicates your data synchronously across three Azure availability zones in Madrid. You can choose LRS for non-production environments to lower cost).*
+### ¿Por qué este paso?
+Un grupo de recursos dedicado permite aislar los datos contables del ERP, establecer límites de control de acceso RBAC específicos para el equipo financiero y auditar costes de forma segregada.
 
-4. **Advanced Tab**:
-   * **Require secure transfer for REST API operations**: Checked (Enabled).
-   * **Enable infrastructure encryption**: Optional (select if double encryption is required).
-   * **Allow enabling public access on individual containers**: **Unchecked (Disabled)** *(Critical for Zero Trust)*.
-   * **Enable storage account key access**: Checked (or uncheck if strictly using Entra ID RBAC).
-   * **Default to Microsoft Entra authorization in the Azure portal**: Checked.
-   * **Minimum TLS version**: **Version 1.2**.
-   * **Permitted scope for copy operations**: Any storage account or within the same tenant.
-   * **Hierarchical namespace**: Disabled (standard flat blob namespace).
-   * **Access tier**: **Hot** *(default for active ingestion)*.
-
-5. **Networking Tab**:
-   * **Network access**:
-     * For initial setup: Select **Enable public access from all networks**.
-     * For production firewall: Select **Enable public access from selected virtual networks and IP addresses**, then add your corporate ERP server outbound public IPs.
-   * **Network routing**: **Microsoft network routing** (lowest latency within Spain).
-
-6. **Data protection Tab**:
-   * *Recovery*:
-     * **Enable soft delete for blobs**: **Checked**, set to **30 days**.
-     * **Enable soft delete for containers**: **Checked**, set to **30 days**.
-     * **Enable soft delete for shares**: Optional (not used for blob).
-   * *Tracking*:
-     * **Enable versioning for blobs**: **Checked**.
-     * **Enable blob change feed**: **Checked**.
-
-7. **Review + create Tab**:
-   * Verify all configurations and click **Create**. Wait 1–2 minutes for deployment to finish.
+### Pasos en el Portal:
+1. Inicie sesión en [portal.azure.com](https://portal.azure.com).
+2. En la barra de búsqueda superior, escriba **Grupos de recursos** (*Resource groups*) y selecciónelo.
+3. Haga clic en el botón superior **+ Crear** (*+ Create*).
+4. En la pestaña **Datos básicos** (*Basics*):
+   * **Suscripción** (*Subscription*): Seleccione su suscripción corporativa.
+   * **Grupo de recursos** (*Resource group*): Escriba `rg-erp-storage-prod-spaincentral`.
+   * **Región** (*Region*): Seleccione **(Europe) Spain Central** / **(Europa) España Central**.
+5. Vaya a la pestaña **Etiquetas** (*Tags*) y agregue:
+   * `Workload` $\rightarrow$ `ERP-Document-Archive`
+   * `LegalCompliance` $\rightarrow$ `Codigo-de-Comercio-Art30-VeriFactu`
+   * `Country` $\rightarrow$ `Spain`
+   * `CostCenter` $\rightarrow$ `Finance-IT`
+6. Haga clic en **Revisar y crear** (*Review + create*), espere la validación verde y haga clic en **Crear** (*Create*).
 
 ---
 
-## Step 3: Enable Advanced Data Protection (Soft Delete & Versioning)
+## Fase 2: Despliegue de la Cuenta de Almacenamiento (Storage Account)
 
-*(If you skipped configuring Data Protection during account creation)*:
+### ¿Por qué este paso?
+La cuenta debe ser de tipo *General Purpose v2* (`StorageV2`) para soportar los 4 niveles de acceso (Hot, Cool, Cold, Archive) y directivas WORM. Seleccionamos **ZRS** (Zone-Redundant Storage) para garantizar supervivencia ante la caída completa de un centro de datos en Madrid.
 
-1. Open your Storage Account `sterpspainprod01`.
-2. In the left navigation menu under **Data management**, select **Data protection**.
-3. Check:
-   * **Enable soft delete for blobs** $\rightarrow$ `30` days.
-   * **Enable soft delete for containers** $\rightarrow$ `30` days.
-   * **Turn on versioning for blobs** $\rightarrow$ Checked.
-   * **Turn on blob change feed** $\rightarrow$ Checked.
-4. Click **Save** at the top.
+### Pasos en el Portal:
+1. Abra el grupo de recursos `rg-erp-storage-prod-spaincentral`.
+2. Haga clic en **+ Crear** (*+ Create*) o **+ Agregar** (*+ Add*).
+3. Busque **Cuenta de almacenamiento** (*Storage account*) y haga clic en **Crear** (*Create*).
 
----
+#### 1. Pestaña Datos básicos (*Basics*)
+```text
++----------------------------------------------------------------------------------+
+| Suscripción / Subscription        : [ Su suscripción corporativa ]               |
+| Grupo de recursos / Resource group: rg-erp-storage-prod-spaincentral             |
+| Nombre de cuenta / Account name   : sterpprod<sufijo_unico> (3-24 letras/números)|
+| Región / Region                   : (Europe) Spain Central                       |
+| Rendimiento / Performance         : Estándar (Standard)                          |
+| Redundancia / Redundancy          : Zone-redundant storage (ZRS)                 |
++----------------------------------------------------------------------------------+
+```
+> [!TIP]
+> **ZRS vs LRS**: En Spain Central, ZRS distribuye los datos sincrónicamente en tres zonas de disponibilidad físicas independientes (distintos edificios, acometidas eléctricas y redes en Madrid). En entornos de prueba o dev puede elegir **LRS** (*Locally redundant storage*) para un coste ligeramente menor.
 
-## Step 4: Create ERP Containers (`facturas` & `pedidos`)
+#### 2. Pestaña Opciones avanzadas (*Advanced*)
+* **Seguridad / Security**:
+  * **Requerir transferencia segura para las operaciones de la API REST** (*Require secure transfer*): **Marcado** (Fuerza HTTPS).
+  * **Habilitar cifrado de infraestructura** (*Enable infrastructure encryption*): Opcional (doble cifrado a nivel de hardware y servicio).
+  * **Permitir habilitar el acceso público en contenedores individuales** (*Allow enabling public access*): **DESMARCADO / UNCHECKED**.
+    *(⚠️ Crítico: Garantiza que ningún usuario pueda exponer facturas de forma anónima en internet).*
+  * **Habilitar acceso con clave de cuenta de almacenamiento** (*Enable storage account key access*): Marcado (o desmarcado si usa exclusivamente Microsoft Entra ID RBAC).
+  * **Versión mínima de TLS** (*Minimum TLS version*): **Version 1.2**.
+  * **Nivel de acceso predeterminado** (*Access tier*): **Frecuente (Hot)**.
+    *(Las facturas del día a día se leen con coste cero por GB; el ciclo de vida las moverá automáticamente después).*
 
-1. Inside your Storage Account, go to the left menu under **Data storage** and click **Containers**.
-2. Click **+ Container**:
-   * **Name**: `facturas`
-   * **Public access level**: **Private (no anonymous access)**
-   * Click **Create**.
-3. Click **+ Container** again:
-   * **Name**: `pedidos`
-   * **Public access level**: **Private (no anonymous access)**
-   * Click **Create**.
+#### 3. Pestaña Redes (*Networking*)
+* **Acceso de red** (*Network access*):
+  * *Para pruebas iniciales*: **Habilitar acceso público desde todas las redes** (*Enable public access from all networks*).
+  * *Para producción endurecida*: **Habilitar acceso público desde redes virtuales y direcciones IP seleccionadas** (*Enable public access from selected virtual networks and IP addresses*) y añada la IP pública de salida de los servidores del ERP.
+* **Preferencia de enrutamiento** (*Routing preference*): **Enrutamiento de red de Microsoft** (*Microsoft network routing*).
 
----
+#### 4. Pestaña Protección de datos (*Data protection*)
+Configure los siguientes valores de seguridad:
+* **Recuperación / Recovery**:
+  * **Habilitar la eliminación temporal de blobs** (*Enable soft delete for blobs*): **Marcado**, establecer en **30 días**.
+  * **Habilitar la eliminación temporal de contenedores** (*Enable soft delete for containers*): **Marcado**, establecer en **30 días**.
+* **Seguimiento / Tracking**:
+  * **Activar el control de versiones de blobs** (*Turn on versioning for blobs*): **Marcado**.
+  * **Activar la fuente de cambios de blobs** (*Turn on blob change feed*): **Marcado**.
 
-## Step 5: Configure WORM Immutability Policy (2,190 Days / 6 Years)
-
-Repeat these steps for both `facturas` and `pedidos`:
-
-1. In the **Containers** list, click on the container name (e.g., `facturas`).
-2. In the left sub-menu under **Settings**, select **Access policy**.
-3. Under the **Immutable blob storage** section, click **+ Add policy**.
-4. Configure the policy dialog:
-   * **Policy type**: Select **Time-based retention**.
-   * **Retention period**: Enter **`2190`** (days).
-   * **Allow additional append writes**: **Checked** *(Enables `allowProtectedAppendWrites = true` for VeriFactu append logs and invoice hash audit trails)*.
-5. Click **Save**.
-6. The policy is now active in **Unlocked** state.
-
-> [!NOTE]
-> In **Unlocked** state, blobs are already protected against modification and deletion. You can run integration tests safely. Do NOT click "Lock policy" until you have validated your ERP uploads.
-
----
-
-## Step 6: Configure Automated Lifecycle Management (Tiering Rules)
-
-1. Return to the Storage Account overview and scroll down the left menu to **Data management** $\rightarrow$ **Lifecycle management**.
-2. Click **+ Add a rule**.
-3. **Details Tab**:
-   * **Rule name**: `tier-erp-invoices-and-orders`
-   * **Rule scope**: Select **Limit blobs with filters**.
-   * **Blob type**: Check **Block blobs**.
-   * **Blob subtype**: Check **Base blobs**, **Snapshots**, and **Versions**.
-   * Click **Next**.
-
-4. **Base blobs Tab**:
-   * Check **Move to cool storage** $\rightarrow$ Enter **`90`** days after last modified.
-   * Check **Move to cold storage** $\rightarrow$ Enter **`365`** days after last modified.
-   * Check **Move to archive storage** $\rightarrow$ Enter **`1095`** days after last modified.
-   * Click **Next**.
-
-5. **Snapshots Tab**:
-   * Check **Move to cool storage** $\rightarrow$ Enter **`90`** days after creation.
-   * Check **Move to cold storage** $\rightarrow$ Enter **`365`** days after creation.
-   * Check **Move to archive storage** $\rightarrow$ Enter **`1095`** days after creation.
-   * Click **Next**.
-
-6. **Versions Tab**:
-   * Check **Move to cool storage** $\rightarrow$ Enter **`90`** days after creation.
-   * Check **Move to cold storage** $\rightarrow$ Enter **`365`** days after creation.
-   * Check **Move to archive storage** $\rightarrow$ Enter **`1095`** days after creation.
-   * Click **Next**.
-
-7. **Filter set Tab**:
-   * In **Blob prefix**, enter:
-     * `facturas/`
-     * `pedidos/`
-8. Click **Add**.
+#### 5. Revisar y Crear (*Review + create*)
+* Haga clic en **Revisar** y luego en **Crear**. La implementación tomará entre 1 y 2 minutos.
 
 ---
 
-## Step 7: Apply the `CanNotDelete` Azure Resource Lock
+## Fase 3: Configuración de Protección de Datos (Soft Delete & Versionado)
 
-1. In the left menu of the Storage Account, locate the **Settings** section and click **Locks**.
-2. Click **+ Add**:
-   * **Lock name**: `lock-erp-storage-prevent-deletion`
-   * **Lock type**: Select **Delete** *(which corresponds to `CanNotDelete`)*.
-   * **Notes**: `Protects ERP compliance storage account against accidental or malicious deletion.`
-3. Click **OK**.
+*(Verificación en caso de no haberse configurado en el asistente)*:
+1. Abra la cuenta de almacenamiento creada (ej. `sterpspainprod01`).
+2. En el menú lateral izquierdo, bajo la sección **Administración de datos** (*Data management*), haga clic en **Protección de datos** (*Data protection*).
+3. Asegúrese de que figure:
+   * Eliminación temporal de blobs: **30 días**.
+   * Eliminación temporal de contenedores: **30 días**.
+   * Control de versiones de blobs: **Habilitado**.
+   * Fuente de cambios de blobs: **Habilitado**.
+4. Si realizó cambios, haga clic en **Guardar** (*Save*) en la parte superior.
 
 ---
 
-## Step 8: Verification, Test Ingestion & Permanent Policy Lock
+## Fase 4: Creación de los Contenedores ERP (`facturas` y `pedidos`)
 
-### 1. Test Ingestion and Deletion Block
-1. Navigate to **Containers** $\rightarrow$ `facturas`.
-2. Click **Upload** and upload a test file (e.g., `test_invoice_001.pdf`).
-3. Select the uploaded blob and click **Delete**.
-4. Observe the deletion failure message:
+### ¿Por qué este paso?
+La separación lógica en contenedores dedicados permite aplicar reglas de ciclo de vida e inmutabilidad con límites claros para los diferentes tipos de documentos del negocio.
+
+### Pasos en el Portal:
+1. En el menú lateral de la cuenta de almacenamiento, bajo **Almacenamiento de datos** (*Data storage*), haga clic en **Contenedores** (*Containers*).
+2. Haga clic en el botón superior **+ Contenedor** (*+ Container*):
+   * **Nombre** (*Name*): `facturas`
+   * **Nivel de acceso público** (*Public access level*): **Privado (sin acceso anónimo)** (*Private - no anonymous access*).
+   * Haga clic en **Crear** (*Create*).
+3. Vuelva a hacer clic en **+ Contenedor**:
+   * **Nombre** (*Name*): `pedidos`
+   * **Nivel de acceso público** (*Public access level*): **Privado (sin acceso anónimo)**.
+   * Haga clic en **Crear** (*Create*).
+
+---
+
+## Fase 5: Configuración de la Directiva Inmutable WORM (2.190 días / 6 años)
+
+### ¿Por qué este paso?
+El **Artículo 30 del Código de Comercio** exige la conservación inalterada de facturas y libros durante 6 años. La **Ley Antifraude 11/2021** y el **Reglamento VeriFactu (RD 1007/2023)** exigen que el sistema informático impida la modificación, borrado o interpolación no trazable de las facturas.
+
+### Pasos para el Contenedor `facturas`:
+1. En la lista de contenedores, haga clic sobre el nombre **`facturas`**.
+2. En el menú secundario izquierdo, bajo la sección **Configuración** (*Settings*), haga clic en **Directiva de acceso** (*Access policy*).
+3. Busque la sección **Almacenamiento de blobs inmutable** (*Immutable blob storage*).
+4. Haga clic en **+ Agregar directiva** (*+ Add policy*).
+5. Se abrirá un panel lateral. Configure exactamente:
+   * **Tipo de directiva** (*Policy type*): **Retención basada en tiempo** (*Time-based retention*).
+   * **Período de retención** (*Retention period*): Escriba **`2190`** (días). *(6 años $\times$ 365 días = 2.190 días)*.
+   * **Permitir escrituras adicionales de anexión** (*Allow additional append writes*): **MARQUE ESTA CASILLA**.
+     *(⚠️ Vital: Permite al ERP anexar nuevos bloques o registros hash de auditoría VeriFactu a blobs existentes sin permitir alterar los datos ya grabados).*
+6. Haga clic en **Guardar** (*Save*).
+7. La directiva quedará guardada en estado **Desbloqueado (Unlocked)**.
+
+### Repita el proceso para el contenedor `pedidos`:
+* Repita los pasos del 1 al 6 seleccionando el contenedor `pedidos`.
+
+```text
++---------------------------------------------------------------------------------------+
+| ESTADOS DE LA DIRECTIVA WORM:                                                         |
+|                                                                                       |
+|  [UNLOCKED / DESBLOQUEADO] (Estado inicial configurado):                              |
+|  -> Los blobs ya NO pueden ser modificados ni borrados.                               |
+|  -> Si cometió un error en el nombre o días, el administrador PUEDE borrar la regla.  |
+|                                                                                       |
+|  [LOCKED / BLOQUEADO] (Pase definitivo a producción):                                 |
+|  -> Irreversible durante 2.190 días.                                                  |
+|  -> NI EL ADMINISTRADOR GLOBAL NI EL SOPORTE DE MICROSOFT PUEDEN DESHACERLO.          |
++---------------------------------------------------------------------------------------+
+```
+
+---
+
+## Fase 6: Configuración de Ciclo de Vida Automatizado (Lifecycle Tiering)
+
+### ¿Por qué este paso?
+Permite reducir el coste de 1 TB de facturas de ~19 €/mes a tan solo ~4,37 € – 5,43 €/mes moviendo automáticamente los documentos a niveles de almacenamiento más económicos a medida que envejecen.
+
+### Pasos en el Portal:
+1. Regrese a la vista principal de la Cuenta de Almacenamiento.
+2. En el menú lateral izquierdo, bajo **Administración de datos** (*Data management*), haga clic en **Administración del ciclo de vida** (*Lifecycle management*).
+3. Haga clic en la pestaña superior **Agregar una regla** (*Add a rule*).
+
+#### 1. Pestaña Detalles (*Details*)
+* **Nombre de la regla** (*Rule name*): `tier-erp-invoices-and-orders`
+* **Ámbito de la regla** (*Rule scope*): Seleccione **Limitar blobs con filtros** (*Limit blobs with filters*).
+* **Tipo de blob** (*Blob type*): Marque **Blobs en bloques** (*Block blobs*).
+* **Subtipo de blob** (*Blob subtype*): Marque:
+  * [x] **Blobs base** (*Base blobs*)
+  * [x] **Instantáneas** (*Snapshots*)
+  * [x] **Versiones** (*Versions*)
+* Haga clic en **Siguiente** (*Next*).
+
+#### 2. Pestaña Blobs base (*Base blobs*)
+Configure las tres transiciones automáticas:
+* [x] **Mover a almacenamiento esporádico** (*Move to cool storage*):
+  * Días después de la última modificación: **`90`**
+* [x] **Mover a almacenamiento en frío** (*Move to cold storage*):
+  * Días después de la última modificación: **`365`**
+* [x] **Mover a almacenamiento de archivo** (*Move to archive storage*):
+  * Días después de la última modificación: **`1095`** *(3 años)*
+* Haga clic en **Siguiente** (*Next*).
+
+#### 3. Pestaña Instantáneas (*Snapshots*)
+* [x] Mover a almacenamiento esporádico: **`90`** días después de la creación.
+* [x] Mover a almacenamiento en frío: **`365`** días después de la creación.
+* [x] Mover a almacenamiento de archivo: **`1095`** días después de la creación.
+* Haga clic en **Siguiente** (*Next*).
+
+#### 4. Pestaña Versiones (*Versions*)
+* [x] Mover a almacenamiento esporádico: **`90`** días después de la creación.
+* [x] Mover a almacenamiento en frío: **`365`** días después de la creación.
+* [x] Mover a almacenamiento de archivo: **`1095`** días después de la creación.
+* Haga clic en **Siguiente** (*Next*).
+
+#### 5. Pestaña Conjunto de filtros (*Filter set*)
+Especifique los prefijos para que la regla solo aplique a los contenedores ERP:
+* En **Prefijo de blob** (*Blob prefix*), agregue:
+  * `facturas/`
+  * `pedidos/`
+* Haga clic en el botón inferior **Agregar** (*Add*).
+
+---
+
+## Fase 7: Aplicación del Bloqueo de Recurso Antiransomware (`CanNotDelete`)
+
+### ¿Por qué este paso?
+Impide que scripts automáticos, cuentas de servicio comprometidas o errores humanos eliminen la cuenta de almacenamiento completa.
+
+### Pasos en el Portal:
+1. En el menú lateral izquierdo de la cuenta de almacenamiento, bajo **Configuración** (*Settings*), haga clic en **Bloqueos** (*Locks*).
+2. Haga clic en **+ Agregar** (*+ Add*).
+3. Rellene el formulario:
+   * **Nombre del bloqueo** (*Lock name*): `lock-erp-storage-prevent-deletion`
+   * **Tipo de bloqueo** (*Lock type*): Seleccione **Eliminar** (*Delete* - técnicamente `CanNotDelete`).
+   * **Notas** (*Notes*): `Protege la cuenta de facturación y pedidos ERP contra borrado accidental o ransomware conforme a normativa fiscal.`
+4. Haga clic en **Aceptar** (*OK*).
+
+---
+
+## Fase 8: Verificación Práctica de Ingesta y Bloqueo Definitivo en Producción
+
+### 1. Prueba de Ingesta y Verificación de Inmutabilidad WORM
+1. Vaya a **Contenedores** $\rightarrow$ haga clic en **`facturas`**.
+2. Haga clic en **Cargar** (*Upload*) y suba un archivo PDF de prueba (ej. `factura_test_001.pdf`).
+3. Una vez cargado, haga clic en la casilla de selección del archivo y pulse el botón superior **Eliminar** (*Delete*).
+4. Confirme el borrado. Observe el resultado inmediato:
    ```text
-   Failed to delete 1 out of 1 blob(s):
-   The operation is not permitted due to a Time-Based Retention Policy. (Code: BlobImmutableDueToPolicy)
+   Error al eliminar 1 de 1 blob(s):
+   La operación no está permitida debido a una directiva de retención basada en tiempo.
+   Código de error: BlobImmutableDueToPolicy (HTTP 409 Conflict)
    ```
+   *El almacenamiento WORM ha impedido el borrado con éxito.*
 
-### 2. Permanently Lock the WORM Policy (Production Only)
+### 2. Bloqueo Permanente de Producción (*Lock Policy*)
 
 > [!CAUTION]
-> Once locked, **NO ONE** (including Azure Global Administrators or Microsoft Support) can delete the policy or the blobs for 2,190 days.
+> **ADVERTENCIA FINAL: ACCIÓN PERMANENTE E IRREVERSIBLE**
+> 
+> Una vez bloqueada la directiva, nadie en el mundo (ni el CEO, ni el Administrador de Dominio, ni el soporte técnico global de Microsoft Azure) podrá desbloquearla ni acortar los 2.190 días. Ejecute esto únicamente cuando las pruebas de ingesta de su ERP hayan finalizado.
 
-1. Go to **Containers** $\rightarrow$ `facturas` $\rightarrow$ **Access policy**.
-2. Locate the Time-based retention policy.
-3. Click the context menu **`...`** (three dots) on the right side of the policy.
-4. Select **Lock policy**.
-5. Read the confirmation dialog, type the required confirmation value or check the box, and click **Lock policy**.
-6. The state will switch from **Unlocked** to **Locked**.
+1. Vaya a **Contenedores** $\rightarrow$ `facturas` $\rightarrow$ **Directiva de acceso** (*Access policy*).
+2. En la fila de la directiva de retención de 2.190 días, haga clic en el botón de tres puntos **`...`** (a la derecha).
+3. Seleccione la opción **Bloquear directiva** (*Lock policy*).
+4. En el cuadro de diálogo de advertencia, marque la casilla de confirmación y haga clic en **Bloquear directiva** (*Lock policy*).
+5. El estado cambiará de **Desbloqueado (Unlocked)** a **Bloqueado (Locked)**.
+6. Repita para el contenedor `pedidos`.
+
+---
+
+## 🛠️ Resumen de Verificación Rápida
+
+| Componente | Configuración en Portal | Valor Verificado |
+| :--- | :--- | :--- |
+| **Región** | Datos básicos $\rightarrow$ Región | `Spain Central` (Madrid) |
+| **Redundancia** | Datos básicos $\rightarrow$ Redundancia | `Zone-redundant storage (ZRS)` |
+| **Seguridad TLS** | Opciones avanzadas $\rightarrow$ TLS | `TLS 1.2` (mínimo) |
+| **Acceso Público** | Opciones avanzadas $\rightarrow$ Acceso público | `Deshabilitado` (Disabled) |
+| **Soft Delete** | Protección de datos $\rightarrow$ Eliminación temporal | `30 días` (blobs y contenedores) |
+| **Inmutabilidad WORM** | Contenedores $\rightarrow$ Directiva de acceso | `2.190 días` + Append Writes activado |
+| **Tiering** | Administración del ciclo de vida $\rightarrow$ Reglas | 90d (Cool), 365d (Cold), 1095d (Archive) |
+| **Bloqueo Azure** | Configuración $\rightarrow$ Bloqueos | `CanNotDelete` activado |
