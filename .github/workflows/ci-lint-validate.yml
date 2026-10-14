@@ -56,7 +56,7 @@ jobs:
 
       - name: Validate Shell Scripts (bash -n)
         run: |
-          for script in azure-cli/*.sh; do
+          for script in $(find . -type f -name "*.sh" -not -path "*/.*/*"); do
             echo "Checking syntax: $script"
             bash -n "$script"
           done
@@ -64,7 +64,7 @@ jobs:
       - name: Validate PowerShell Scripts
         shell: pwsh
         run: |
-          $scripts = Get-ChildItem -Path ./powershell -Filter *.ps1
+          $scripts = Get-ChildItem -Path . -Recurse -Filter *.ps1 | Where-Object { $_.FullName -notmatch '\.git' }
           foreach ($script in $scripts) {
               Write-Host "Checking PowerShell syntax: $($script.FullName)"
               $errors = @()

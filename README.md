@@ -214,6 +214,48 @@ Includes exhaustive instructions covering:
 
 ---
 
+## 🧪 Day-2 Operations, Testing & FinOps Tools
+
+Beyond provisioning, this repository provides enterprise Day-2 operational utilities:
+
+### 1. Automated Compliance & Immutability Test Suite
+Validate that your deployment is 100% compliant before loading live ERP data:
+* **Bash**: `./scripts/test-worm-compliance.sh -s <storage_account> -g <resource_group>`
+* **PowerShell**: `./scripts/Test-WORMCompliance.ps1 -StorageAccountName <storage_account> -ResourceGroupName <resource_group>`
+
+Executes 6 automated assertions:
+1. Block blob ingestion.
+2. Overwrite rejection (`BlobImmutableDueToPolicy`).
+3. Deletion rejection under WORM policy.
+4. Append writes verification (`allowProtectedAppendWrites = true` for VeriFactu).
+5. 30-day Soft Delete & Blob Versioning validation.
+6. Azure Management Lock (`CanNotDelete`) audit.
+
+### 2. Interactive FinOps TCO Simulator
+Simulate custom invoice volumes and calculate 6-year and 10-year cumulative savings:
+```bash
+python3 scripts/calculate-erp-storage-tco.py --volume-gb 1000 --sku ZRS --years 6
+```
+
+### 3. Auditing & Monitoring with KQL (Kusto Query Language)
+Complete audit guide in [`docs/AUDITING_AND_MONITORING.md`](docs/AUDITING_AND_MONITORING.md):
+* Pre-configured KQL queries to detect unauthorized delete/overwrite attempts (WORM violations).
+* Rehydration tracking from Archive tier.
+* RGPD Article 30 access trails by IP address and user identity.
+
+### 4. ERP Integration & Archive Rehydration Code Samples
+Full integration guide in [`docs/ERP_INTEGRATION_AND_REHYDRATION.md`](docs/ERP_INTEGRATION_AND_REHYDRATION.md):
+* **Python**: [`examples/python/upload_verifactu_invoice.py`](examples/python/upload_verifactu_invoice.py) (Entra ID RBAC + index tags).
+* **C# / .NET 8**: [`examples/csharp/InvoiceStorageService.cs`](examples/csharp/InvoiceStorageService.cs) (Enterprise ERP service).
+* **cURL / REST**: [`examples/curl/rehydrate_archive_blob.sh`](examples/curl/rehydrate_archive_blob.sh) (Direct REST rehydration call).
+
+### 5. Tax Legal Hold Management (AEAT Expedientes)
+Place or remove indefinite legal holds for ongoing tax audits without modifying the time-based retention:
+* **Bash**: `./azure-cli/legal-hold.sh -s <storage_account> -c facturas --action set --tag aeat-expediente-2026`
+* **PowerShell**: `./powershell/Set-AzureStorageLegalHold.ps1 -StorageAccountName <storage_account> -ResourceGroupName <resource_group> -Tag aeat-expediente-2026`
+
+---
+
 ## 🔒 Crucial Note on WORM Policy Locking
 
 > [!CAUTION]
@@ -238,8 +280,10 @@ azure-storage-erp-compliance-iac/
 │       └── ci-lint-validate.yml        # CI pipeline validating Terraform, Bicep, Bash & PS
 ├── docs/
 │   ├── ARCHITECTURE.md                 # Detailed architecture & Mermaid diagrams
+│   ├── AUDITING_AND_MONITORING.md      # KQL queries & Log Analytics audit settings
 │   ├── AZURE_PORTAL_CLICKOPS_GUIDE.md  # Click-by-click Azure Portal manual setup guide
 │   ├── COST_OPTIMIZATION.md            # Mathematical TCO model for 1 TB in Spain Central
+│   ├── ERP_INTEGRATION_AND_REHYDRATION.md # Developer guide for ERP upload & rehydration
 │   ├── LEGAL_COMPLIANCE_SPAIN.md       # Cód. Comercio, LGT, Ley Antifraude, VeriFactu, RGPD
 │   └── WORM_POLICY_LOCK_GUIDE.md       # Step-by-step WORM Unlocked vs Locked guide
 ├── terraform/
@@ -250,11 +294,13 @@ azure-storage-erp-compliance-iac/
 │   └── terraform.tfvars.example        # Spain Central ZRS template
 ├── azure-cli/
 │   ├── deploy.sh                       # Idempotent Bash deployment script
+│   ├── legal-hold.sh                   # Script to set/clear AEAT tax legal holds
 │   ├── lock-immutability.sh            # Safe interactive script to lock WORM policy
 │   └── destroy.sh                      # Controlled cleanup script for test environments
 ├── powershell/
 │   ├── Deploy-AzureStorageWORM.ps1     # PowerShell 7+ Az module automation
-│   └── Lock-ImmutabilityPolicy.ps1     # Interactive PowerShell WORM lock script
+│   ├── Lock-ImmutabilityPolicy.ps1     # Interactive PowerShell WORM lock script
+│   └── Set-AzureStorageLegalHold.ps1   # PowerShell Legal Hold management script
 ├── ansible/
 │   ├── requirements.yml                # azure.azcollection
 │   ├── playbook.yml                    # Main orchestration playbook
@@ -264,6 +310,14 @@ azure-storage-erp-compliance-iac/
 │   ├── main.bicep                      # Root Bicep template
 │   ├── main.bicepparam                 # Parameter file for Spain Central
 │   └── modules/                        # Modular resources (storage, containers, lifecycle, lock)
+├── scripts/
+│   ├── test-worm-compliance.sh         # Automated 6-step compliance test suite (Bash)
+│   ├── Test-WORMCompliance.ps1         # Automated 6-step compliance test suite (PowerShell)
+│   └── calculate-erp-storage-tco.py    # Zero-dependency FinOps TCO calculator CLI
+├── examples/
+│   ├── python/upload_verifactu_invoice.py # Python SDK Entra ID + VeriFactu tags sample
+│   ├── csharp/InvoiceStorageService.cs     # .NET 8 / C# enterprise ERP integration service
+│   └── curl/rehydrate_archive_blob.sh     # REST API rehydration script
 ├── LICENSE                             # Apache-2.0 License
 └── README.md                           # This documentation
 ```
