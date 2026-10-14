@@ -1,0 +1,66 @@
+# ==============================================================================
+# GitLab CI: Módulo de Automatización para Terraform con OIDC
+# ==============================================================================
+
+.terraform_base:
+  image: hashicorp/terraform:1.9.0
+  id_tokens:
+    AZURE_JWT:
+      aud: "api://AzureADTokenExchange"
+  variables:
+    ARM_USE_OIDC: "true"
+    ARM_OIDC_TOKEN: "$AZURE_JWT"
+    ARM_CLIENT_ID: "$AZURE_CLIENT_ID"
+    ARM_TENANT_ID: "$AZURE_TENANT_ID"
+    ARM_SUBSCRIPTION_ID: "$AZURE_SUBSCRIPTION_ID"
+    TF_IN_AUTOMATION: "true"
+  before_script:
+    - cd terraform
+    - terraform init -backend=false
+
+tf:lint_and_plan:
+  stage: plan
+  extends: .terraform_base
+  script:
+    - terraform fmt -check
+    - terraform validate
+    - |
+      terraform plan \
+        -var="resource_group_name=${RESOURCE_GROUP}" \
+        -var="storage_account_name=${STORAGE_ACCOUNT}" \
+        -var="location=${AZURE_REGION}" \
+        -var="retention_period_in_days=2190" \
+        -var="lock_immutability_policy=false"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"
+
+tf:apply_production:
+  stage: deploy
+  extends: .terraform_base
+  environment:
+    name: production
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+tf:destroy_safe:
+  stage: decommission
+  extends: .terraform_base
+  environment:
+    name: production-decommission
+  script:
+    - |
+      if [ "$CONFIRM_DESTROY" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+        echo "ERROR: Variable CONFIRM_DESTROY incorrecta o ausente."
+        echo "Debe definir la variable con el valor exacto: CONFIRM-DECOMMISSION-ERP-STORAGE"
+        exit 1
+      fi
+    - terraform init
+    - terraform destroy -auto-approve
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual

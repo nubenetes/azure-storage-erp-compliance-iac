@@ -1,0 +1,46 @@
+# ==============================================================================
+# GitLab CI/CD: Pipeline Declarativo Multi-IaC con Azure OIDC y Decomisión Segura
+# ==============================================================================
+
+stages:
+  - lint_validate
+  - plan
+  - deploy
+  - compliance_test
+  - decommission
+
+variables:
+  AZURE_REGION: "spaincentral"
+  RESOURCE_GROUP: "rg-erp-storage-prod-spaincentral"
+  STORAGE_ACCOUNT: "sterpspainprod01"
+  TF_VERSION: "1.9.0"
+
+include:
+  - local: ".gitlab/ci/terraform.gitlab-ci.yml"
+  - local: ".gitlab/ci/bicep-azurecli.gitlab-ci.yml"
+
+# Plantilla base para autenticación OIDC con Microsoft Entra ID
+.azure_oidc_base:
+  image: mcr.microsoft.com/azure-cli:latest
+  id_tokens:
+    AZURE_JWT:
+      aud: "api://AzureADTokenExchange"
+  before_script:
+    - az login --service-principal -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$AZURE_JWT"
+    - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+
+# ------------------------------------------------------------------------------
+# ETAPA: Lint y Validación Estática
+# ------------------------------------------------------------------------------
+lint:syntax_and_schemas:
+  stage: lint_validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash python3 py3-pip
+    - pip install --break-system-packages pyyaml
+  script:
+    - echo "Validando sintaxis de scripts Shell..."
+    - for s in $(find . -name "*.sh" -not -path "*/.*/*"); do bash -n "$s" || exit 1; done
+    - echo "Validando estructura de archivos YAML..."
+    - python3 -c 'import os, yaml; [yaml.safe_load(open(os.path.join(r, f))) for r, _, fs in os.walk(".") if not "/." in r for f in fs if f.endswith((".yml", ".yaml"))]'
+    - echo "Validación estática completada exitosamente."

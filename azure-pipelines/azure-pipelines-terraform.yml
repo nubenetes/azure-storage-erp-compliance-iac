@@ -1,0 +1,181 @@
+# ==============================================================================
+# Azure DevOps Pipeline: Terraform Enterprise Lifecycle (OIDC & Safe Decommission)
+# ==============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/**
+      - azure-pipelines/azure-pipelines-terraform.yml
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/**
+      - azure-pipelines/azure-pipelines-terraform.yml
+
+parameters:
+  - name: action
+    displayName: "Acción de Terraform a ejecutar"
+    type: string
+    default: "plan"
+    values:
+      - "plan"
+      - "apply"
+      - "destroy"
+  - name: destroyConfirmation
+    displayName: "Para destroy, escriba exactamente: CONFIRM-DECOMMISSION-ERP-STORAGE"
+    type: string
+    default: ""
+
+variables:
+  - name: AZURE_SERVICE_CONNECTION
+    value: "sc-azure-spaincentral-oidc"
+  - name: TF_VERSION
+    value: "1.9.0"
+  - name: WORKING_DIR
+    value: "$(System.DefaultWorkingDirectory)/terraform"
+
+pool:
+  vmImage: "ubuntu-latest"
+
+stages:
+  # ----------------------------------------------------------------------------
+  # ETAPA 1: Validación y Planificación (PRs y CI)
+  # ----------------------------------------------------------------------------
+  - stage: ValidateAndPlan
+    displayName: "1. Validación y Planificación"
+    condition: or(eq(variables['Build.Reason'], 'PullRequest'), eq('${{ parameters.action }}', 'plan'))
+    jobs:
+      - job: TerraformPlan
+        displayName: "Terraform Init & Plan"
+        steps:
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: $(TF_VERSION)
+
+          - script: |
+              terraform fmt -check
+              terraform validate
+            workingDirectory: $(WORKING_DIR)
+            displayName: "Validación de Código Terraform"
+
+          - task: AzureCLI@2
+            displayName: "Terraform Plan con Service Connection OIDC"
+            inputs:
+              azureSubscription: $(AZURE_SERVICE_CONNECTION)
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              workingDirectory: $(WORKING_DIR)
+              inlineScript: |
+                terraform init -backend=false
+                terraform plan \
+                  -var="resource_group_name=rg-erp-storage-prod-spaincentral" \
+                  -var="storage_account_name=sterpspainprod01" \
+                  -var="location=spaincentral" \
+                  -var="retention_period_in_days=2190" \
+                  -var="lock_immutability_policy=false"
+
+  # ----------------------------------------------------------------------------
+  # ETAPA 2: Despliegue en Producción (Merge a Main o Apply Manual)
+  # ----------------------------------------------------------------------------
+  - stage: DeployProduction
+    displayName: "2. Despliegue en Producción"
+    dependsOn: []
+    condition: or(and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'IndividualCI')), eq('${{ parameters.action }}', 'apply'))
+    jobs:
+      - deployment: DeployJob
+        displayName: "Aprobación y Despliegue Terraform"
+        environment: "production-erp-storage"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: $(TF_VERSION)
+
+                - task: AzureCLI@2
+                  displayName: "Terraform Init y Apply"
+                  inputs:
+                    azureSubscription: $(AZURE_SERVICE_CONNECTION)
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    workingDirectory: $(WORKING_DIR)
+                    inlineScript: |
+                      terraform init
+                      terraform apply -auto-approve
+
+                - task: AzureCLI@2
+                  displayName: "Verificación de Cumplimiento WORM (Día 2)"
+                  inputs:
+                    azureSubscription: $(AZURE_SERVICE_CONNECTION)
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    inlineScript: |
+                      chmod +x ./scripts/test-worm-compliance.sh
+                      ./scripts/test-worm-compliance.sh \
+                        -g "rg-erp-storage-prod-spaincentral" \
+                        -s "sterpspainprod01" \
+                        -c "facturas"
+
+  # ----------------------------------------------------------------------------
+  # ETAPA 3: Decomisión Segura y Controlada (Destroy Manual)
+  # ----------------------------------------------------------------------------
+  - stage: DecommissionSafe
+    displayName: "3. Decomisión Segura (Destroy)"
+    dependsOn: []
+    condition: eq('${{ parameters.action }}', 'destroy')
+    jobs:
+      - deployment: DestroyJob
+        displayName: "Liberación de Bloqueos y Destroy"
+        environment: "production-decommission-gate"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - script: |
+                    if [ "${{ parameters.destroyConfirmation }}" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+                      echo "##vso[task.logissue type=error]Confirmación de seguridad no válida."
+                      exit 1
+                    fi
+                  displayName: "Validación de Frase de Seguridad"
+
+                - task: AzureCLI@2
+                  displayName: "Liberación de Bloqueo CanNotDelete"
+                  inputs:
+                    azureSubscription: $(AZURE_SERVICE_CONNECTION)
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    inlineScript: |
+                      RG="rg-erp-storage-prod-spaincentral"
+                      LOCK_ID=$(az lock list --resource-group "$RG" --query "[?level=='CanNotDelete'].id" -o tsv 2>/dev/null || true)
+                      if [ -n "$LOCK_ID" ]; then
+                        echo "Eliminando bloqueo CanNotDelete: $LOCK_ID"
+                        az lock delete --ids $LOCK_ID
+                      fi
+
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: $(TF_VERSION)
+
+                - task: AzureCLI@2
+                  displayName: "Terraform Destroy"
+                  inputs:
+                    azureSubscription: $(AZURE_SERVICE_CONNECTION)
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    workingDirectory: $(WORKING_DIR)
+                    inlineScript: |
+                      terraform init
+                      terraform destroy -auto-approve

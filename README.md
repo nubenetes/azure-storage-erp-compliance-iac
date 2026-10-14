@@ -37,12 +37,13 @@ Este proyecto proporciona implementaciones automatizadas completas en **Terrafor
   * [6.4. Ansible](#4-ansible)
   * [6.5. Azure Bicep](#5-azure-bicep)
   * [6.6. Azure Portal (Manual / ClickOps)](#6-azure-portal-manual--clickops)
-* [7. 🧪 Operaciones Día 2, Pruebas Automatizadas y FinOps](#-operaciones-día-2-pruebas-automatizadas-y-finops)
-* [8. 🔒 Advertencia Crítica sobre el Bloqueo de la Directiva WORM](#-advertencia-crítica-sobre-el-bloqueo-de-la-directiva-worm)
-* [9. 📂 Estructura del Repositorio](#-estructura-del-repositorio)
-* [10. 📚 Referencias Públicas y Documentación Oficial](#-referencias-públicas-y-documentación-oficial)
-* [11. 🤝 Contribuciones](#-contribuciones)
-* [12. 📜 Licencia](#-licencia)
+* [7. 🔄 Automatización CI/CD Multiplataforma (GitHub, Azure DevOps, GitLab, Bitbucket)](#-automatización-cicd-multiplataforma-github-actions-azure-devops-gitlab-bitbucket)
+* [8. 🧪 Operaciones Día 2, Pruebas Automatizadas y FinOps](#-operaciones-día-2-pruebas-automatizadas-y-finops)
+* [9. 🔒 Advertencia Crítica sobre el Bloqueo de la Directiva WORM](#-advertencia-crítica-sobre-el-bloqueo-de-la-directiva-worm)
+* [10. 📂 Estructura del Repositorio](#-estructura-del-repositorio)
+* [11. 📚 Referencias Públicas y Documentación Oficial](#-referencias-públicas-y-documentación-oficial)
+* [12. 🤝 Contribuciones](#-contribuciones)
+* [13. 📜 Licencia](#-licencia)
 
 ---
 
@@ -154,6 +155,7 @@ Para profundizar en cada vertiente del proyecto (arquitectura, marco legal, fina
 | 🖱️ **Manual en Azure Portal (ClickOps)** | Manual paso a paso en 8 fases a través de la interfaz web gráfica del Portal de Azure con nombres en español e inglés. | [Consultar Guía →](docs/AZURE_PORTAL_CLICKOPS_GUIDE.md) |
 | 📊 **Auditoría, Monitorización y KQL** | Configuración de diagnósticos a Log Analytics Workspace y 4 consultas KQL para inspecciones tributarias y RGPD. | [Consultar Guía →](docs/AUDITING_AND_MONITORING.md) |
 | 🔌 **Integración ERP y Rehidratación** | Autenticación Zero Trust mediante Entra ID RBAC, etiquetas de índice (*Blob Index Tags*) y rehidratación desde Archive. | [Consultar Guía →](docs/ERP_INTEGRATION_AND_REHYDRATION.md) |
+| 🚀 **Automatización CI/CD Multiplataforma** | Pipelines con OIDC (sin secretos) en GitHub Actions, Azure DevOps, GitLab CI y Bitbucket con decomisión segura. | [Consultar Guía →](docs/CICD_AUTOMATION_GUIDE.md) |
 
 ---
 
@@ -245,6 +247,37 @@ Incluye instrucciones minuciosas que cubren:
 
 ---
 
+## 🔄 Automatización CI/CD Multiplataforma (GitHub Actions, Azure DevOps, GitLab, Bitbucket)
+
+Todas las soluciones de Infraestructura como Código (IaC) de este repositorio están preparadas para ser orquestadas no solo localmente por CLI, sino de forma 100% automatizada y declarativa a través de pipelines modernos de CI/CD empresariales, utilizando **federación de identidades OIDC con Microsoft Entra ID (Zero Trust sin contraseñas)**:
+
+```text
+       PR / Commit                     Aprobación Manual              Día 2 & Decomisión
+  [Lint & Validación]  ──────────►  [Puerta en Entorno]  ──────────►  [Compliance Test]
+  [Terraform Plan]                  [Deploy / Apply]                  [Destroy Seguro con Lock Release]
+  [Bicep What-If]                   [Región Spain Central]
+```
+
+### Pipelines Listos para Producción Incluidos:
+
+1. **GitHub Actions** ([`.github/workflows/`](.github/workflows/)):
+   * [`deploy-terraform.yml`](.github/workflows/deploy-terraform.yml): Plan automático en Pull Requests, Apply con entorno de producción y Destroy manual con frase de seguridad `CONFIRM-DECOMMISSION-ERP-STORAGE`.
+   * [`deploy-bicep.yml`](.github/workflows/deploy-bicep.yml): What-If en PRs y despliegue idempotente a `spaincentral`.
+   * [`deploy-iac-orchestrator.yml`](.github/workflows/deploy-iac-orchestrator.yml): Orquestador con selector para Azure CLI, PowerShell, Ansible, Bicep y Terraform.
+2. **Azure DevOps Pipelines** ([`azure-pipelines/`](azure-pipelines/)):
+   * [`azure-pipelines-terraform.yml`](azure-pipelines/azure-pipelines-terraform.yml): Pipeline YAML multi-etapa (`ValidateAndPlan` $\rightarrow$ `DeployProduction` $\rightarrow$ `DecommissionSafe`) con Service Connection federada OIDC.
+   * [`azure-pipelines-bicep.yml`](azure-pipelines/azure-pipelines-bicep.yml): Tareas nativas de Bicep y despliegue a Resource Group.
+   * [`azure-pipelines-orchestrator.yml`](azure-pipelines/azure-pipelines-orchestrator.yml): Automatización para Ansible, PowerShell Az y Azure CLI.
+3. **GitLab CI/CD** ([`.gitlab-ci.yml`](.gitlab-ci.yml)):
+   * Pipeline declarativo con `id_tokens` para Azure OIDC, etapas de `plan`, `deploy` (manual) y `decommission` en [`.gitlab/ci/`](.gitlab/ci/).
+4. **Bitbucket Pipelines** ([`bitbucket-pipelines.yml`](bitbucket-pipelines.yml)):
+   * Flujo con `oidc: true`, pasos de validación en Pull Requests y puertas de despliegue a producción.
+
+📖 **Guía Completa de Configuración**: Consulte el manual paso a paso con configuración de identidades federadas Entra ID y salvaguardas de decomisión en:  
+👉 **[`docs/CICD_AUTOMATION_GUIDE.md`](docs/CICD_AUTOMATION_GUIDE.md)**
+
+---
+
 ## 🧪 Operaciones Día 2, Pruebas Automatizadas y FinOps
 
 Más allá del aprovisionamiento, este repositorio incluye utilidades operativas para el mantenimiento del entorno:
@@ -308,11 +341,25 @@ Congele de forma indefinida documentos afectados por una inspección tributaria 
 azure-storage-erp-compliance-iac/
 ├── .github/
 │   └── workflows/
-│       └── ci-lint-validate.yml        # Pipeline de CI (Terraform, Bicep, Bash, PS y YAML)
+│       ├── ci-lint-validate.yml        # Pipeline de CI (Terraform, Bicep, Bash, PS y YAML)
+│       ├── deploy-terraform.yml        # CI/CD GitHub Actions: Plan, Apply y Destroy (OIDC)
+│       ├── deploy-bicep.yml            # CI/CD GitHub Actions: Bicep What-If y Deploy (OIDC)
+│       └── deploy-iac-orchestrator.yml # Orquestador multi-herramienta (CLI, PS, Ansible)
+├── azure-pipelines/
+│   ├── azure-pipelines-terraform.yml   # Pipeline Azure DevOps multi-etapa con Service Connection
+│   ├── azure-pipelines-bicep.yml       # Pipeline Azure DevOps para Bicep
+│   └── azure-pipelines-orchestrator.yml# Orquestador Azure DevOps para CLI, PS y Ansible
+├── .gitlab-ci.yml                      # Pipeline raíz de GitLab CI/CD con id_tokens OIDC
+├── .gitlab/
+│   └── ci/
+│       ├── terraform.gitlab-ci.yml     # Jobs de Terraform (plan, apply, destroy manual)
+│       └── bicep-azurecli.gitlab-ci.yml# Jobs de Bicep, Azure CLI y compliance test
+├── bitbucket-pipelines.yml             # Pipeline Atlassian Bitbucket con OIDC y manual gates
 ├── docs/
 │   ├── ARCHITECTURE.md                 # Arquitectura detallada con diagramas Mermaid
 │   ├── AUDITING_AND_MONITORING.md      # Consultas KQL y configuración de diagnósticos
 │   ├── AZURE_PORTAL_CLICKOPS_GUIDE.md  # Manual operativo paso a paso en Azure Portal
+│   ├── CICD_AUTOMATION_GUIDE.md        # Manual de CI/CD: OIDC, GitHub, ADO, GitLab, Bitbucket
 │   ├── COST_OPTIMIZATION.md            # Modelo financiero y TCO para 1 TB en Spain Central
 │   ├── ERP_INTEGRATION_AND_REHYDRATION.md # Guía para desarrolladores de integración y rehidratación
 │   ├── LEGAL_COMPLIANCE_SPAIN.md       # Cód. Comercio, LGT, Ley Antifraude, VeriFactu, RGPD

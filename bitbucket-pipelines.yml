@@ -1,0 +1,93 @@
+# ==============================================================================
+# Bitbucket Pipelines: Multi-IaC Enterprise Workflow (OIDC & Safe Decommission)
+# ==============================================================================
+
+image: mcr.microsoft.com/azure-cli:latest
+
+definitions:
+  services:
+    docker:
+      memory: 2048
+
+  steps:
+    - step: &lint-and-validate
+        name: "Validación de Sintaxis y Scripts"
+        image: alpine:latest
+        script:
+          - apk add --no-cache bash
+          - for s in $(find . -name "*.sh" -not -path "*/.*/*"); do bash -n "$s" || exit 1; done
+          - echo "Todos los scripts Shell son sintácticamente válidos."
+
+    - step: &terraform-plan
+        name: "Terraform Plan (OIDC)"
+        image: hashicorp/terraform:1.9.0
+        oidc: true
+        script:
+          - cd terraform
+          - export ARM_USE_OIDC="true"
+          - export ARM_OIDC_TOKEN="$BITBUCKET_STEP_OIDC_TOKEN"
+          - export ARM_CLIENT_ID="$AZURE_CLIENT_ID"
+          - export ARM_TENANT_ID="$AZURE_TENANT_ID"
+          - export ARM_SUBSCRIPTION_ID="$AZURE_SUBSCRIPTION_ID"
+          - terraform init -backend=false
+          - terraform fmt -check
+          - terraform validate
+          - terraform plan -no-color
+
+    - step: &bicep-what-if
+        name: "Azure Bicep What-If (OIDC)"
+        oidc: true
+        script:
+          - az login --service-principal -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$BITBUCKET_STEP_OIDC_TOKEN"
+          - az bicep build --file bicep/main.bicep
+          - az deployment group what-if --resource-group "rg-erp-storage-prod-spaincentral" --template-file bicep/main.bicep --parameters bicep/main.bicepparam || true
+
+pipelines:
+  pull-requests:
+    "**":
+      - step: *lint-and-validate
+      - step: *terraform-plan
+      - step: *bicep-what-if
+
+  branches:
+    main:
+      - step: *lint-and-validate
+      - step: *terraform-plan
+      - step:
+          name: "Despliegue en Producción (Manual Gate)"
+          trigger: manual
+          deployment: production
+          oidc: true
+          script:
+            - az login --service-principal -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$BITBUCKET_STEP_OIDC_TOKEN"
+            - echo "Desplegando infraestructura de almacenamiento ERP en Spain Central..."
+            - chmod +x ./azure-cli/*.sh
+            - ./azure-cli/deploy.sh -g "rg-erp-storage-prod-spaincentral" -s "sterpspainprod01" -l "spaincentral" -r "Standard_ZRS"
+      - step:
+          name: "Verificación de Cumplimiento WORM (Día 2)"
+          oidc: true
+          script:
+            - az login --service-principal -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$BITBUCKET_STEP_OIDC_TOKEN"
+            - chmod +x ./scripts/test-worm-compliance.sh
+            - ./scripts/test-worm-compliance.sh -g "rg-erp-storage-prod-spaincentral" -s "sterpspainprod01" -c "facturas"
+
+  custom:
+    decommission-safe:
+      - step:
+          name: "Decomisión Controlada de Recursos"
+          trigger: manual
+          deployment: production-decommission
+          oidc: true
+          script:
+            - |
+              if [ "$CONFIRM_DESTROY" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+                echo "ERROR: Confirmación de seguridad ausente para decomisión."
+                exit 1
+              fi
+            - az login --service-principal -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$BITBUCKET_STEP_OIDC_TOKEN"
+            - RG="rg-erp-storage-prod-spaincentral"
+            - echo "Eliminando bloqueo de administración CanNotDelete..."
+            - LOCK_ID=$(az lock list --resource-group "$RG" --query "[?level=='CanNotDelete'].id" -o tsv 2>/dev/null || true)
+            - if [ -n "$LOCK_ID" ]; then az lock delete --ids $LOCK_ID; fi
+            - echo "Eliminando grupo de recursos..."
+            - az group delete --name "$RG" --yes --no-wait

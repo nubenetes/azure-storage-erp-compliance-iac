@@ -1,0 +1,75 @@
+# ==============================================================================
+# GitLab CI: Módulo para Azure Bicep y Azure CLI con OIDC
+# ==============================================================================
+
+bicep:build_and_whatif:
+  stage: plan
+  extends: .azure_oidc_base
+  script:
+    - az bicep build --file bicep/main.bicep
+    - |
+      az deployment group what-if \
+        --resource-group "$RESOURCE_GROUP" \
+        --template-file bicep/main.bicep \
+        --parameters bicep/main.bicepparam || true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+bicep:deploy_production:
+  stage: deploy
+  extends: .azure_oidc_base
+  environment:
+    name: production
+  script:
+    - az group create --name "$RESOURCE_GROUP" --location "$AZURE_REGION" --tags Workload=ERP Environment=Production
+    - |
+      az deployment group create \
+        --name "gitlab-bicep-$CI_PIPELINE_ID" \
+        --resource-group "$RESOURCE_GROUP" \
+        --template-file bicep/main.bicep \
+        --parameters bicep/main.bicepparam
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+azcli:deploy_idempotent:
+  stage: deploy
+  extends: .azure_oidc_base
+  environment:
+    name: production
+  script:
+    - chmod +x ./azure-cli/*.sh
+    - ./azure-cli/deploy.sh -g "$RESOURCE_GROUP" -s "$STORAGE_ACCOUNT" -l "$AZURE_REGION" -r "Standard_ZRS"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+compliance:verify_worm:
+  stage: compliance_test
+  extends: .azure_oidc_base
+  script:
+    - chmod +x ./scripts/test-worm-compliance.sh
+    - ./scripts/test-worm-compliance.sh -g "$RESOURCE_GROUP" -s "$STORAGE_ACCOUNT" -c "facturas"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+decommission:safe_cleanup:
+  stage: decommission
+  extends: .azure_oidc_base
+  environment:
+    name: production-decommission
+  script:
+    - |
+      if [ "$CONFIRM_DESTROY" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+        echo "ERROR: Confirmación de seguridad ausente para decomisión."
+        exit 1
+      fi
+    - echo "Eliminando bloqueo CanNotDelete si existe..."
+    - LOCK_ID=$(az lock list --resource-group "$RESOURCE_GROUP" --query "[?level=='CanNotDelete'].id" -o tsv 2>/dev/null || true)
+    - if [ -n "$LOCK_ID" ]; then az lock delete --ids $LOCK_ID; fi
+    - az group delete --name "$RESOURCE_GROUP" --yes --no-wait
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual

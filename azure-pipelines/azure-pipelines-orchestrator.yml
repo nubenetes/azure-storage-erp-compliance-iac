@@ -1,0 +1,130 @@
+# ==============================================================================
+# Azure DevOps Pipeline: Multi-Tool Orchestrator (CLI, Ansible, PowerShell)
+# ==============================================================================
+
+trigger: none
+
+parameters:
+  - name: tool
+    displayName: "Herramienta de IaC a ejecutar"
+    type: string
+    default: "azure-cli"
+    values:
+      - "azure-cli"
+      - "powershell"
+      - "ansible"
+  - name: action
+    displayName: "Acción del ciclo de vida"
+    type: string
+    default: "deploy"
+    values:
+      - "deploy"
+      - "compliance-test"
+      - "decommission"
+  - name: resourceGroup
+    displayName: "Grupo de recursos"
+    type: string
+    default: "rg-erp-storage-prod-spaincentral"
+  - name: storageAccount
+    displayName: "Nombre de la cuenta de almacenamiento"
+    type: string
+    default: "sterpspainprod01"
+  - name: decommissionConfirmation
+    displayName: "Obligatorio para decommission: CONFIRM-DECOMMISSION-ERP-STORAGE"
+    type: string
+    default: ""
+
+variables:
+  - name: AZURE_SERVICE_CONNECTION
+    value: "sc-azure-spaincentral-oidc"
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - checkout: self
+
+  # ----------------------------------------------------------------------------
+  # VALIDACIÓN DE SEGURIDAD
+  # ----------------------------------------------------------------------------
+  - script: |
+      if [ "${{ parameters.action }}" == "decommission" ] && [ "${{ parameters.decommissionConfirmation }}" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+        echo "##vso[task.logissue type=error]Frase de confirmación obligatoria para decomisión: CONFIRM-DECOMMISSION-ERP-STORAGE"
+        exit 1
+      fi
+    displayName: "Validación de Seguridad Previa"
+
+  # ----------------------------------------------------------------------------
+  # HERRAMIENTA 1: Azure CLI
+  # ----------------------------------------------------------------------------
+  - task: AzureCLI@2
+    displayName: "Ejecutar Azure CLI (${{ parameters.action }})"
+    condition: eq('${{ parameters.tool }}', 'azure-cli')
+    inputs:
+      azureSubscription: $(AZURE_SERVICE_CONNECTION)
+      scriptType: "bash"
+      scriptLocation: "inlineScript"
+      inlineScript: |
+        chmod +x ./azure-cli/*.sh
+        if [ "${{ parameters.action }}" == "deploy" ]; then
+          ./azure-cli/deploy.sh -g "${{ parameters.resourceGroup }}" -s "${{ parameters.storageAccount }}" -l "spaincentral" -r "Standard_ZRS"
+        elif [ "${{ parameters.action }}" == "decommission" ]; then
+          ./azure-cli/destroy.sh -g "${{ parameters.resourceGroup }}" -s "${{ parameters.storageAccount }}" --force
+        fi
+
+  # ----------------------------------------------------------------------------
+  # HERRAMIENTA 2: PowerShell (Az)
+  # ----------------------------------------------------------------------------
+  - task: AzurePowerShell@5
+    displayName: "Ejecutar PowerShell Az (${{ parameters.action }})"
+    condition: eq('${{ parameters.tool }}', 'powershell')
+    inputs:
+      azureSubscription: $(AZURE_SERVICE_CONNECTION)
+      ScriptType: "InlineScript"
+      azurePowerShellVersion: "LatestVersion"
+      Inline: |
+        if ("${{ parameters.action }}" -eq "deploy") {
+          ./powershell/Deploy-AzureStorageWORM.ps1 `
+            -ResourceGroupName "${{ parameters.resourceGroup }}" `
+            -StorageAccountName "${{ parameters.storageAccount }}" `
+            -Location "spaincentral" `
+            -SkuName "Standard_ZRS" `
+            -RetentionDays 2190
+        }
+
+  # ----------------------------------------------------------------------------
+  # HERRAMIENTA 3: Ansible
+  # ----------------------------------------------------------------------------
+  - task: AzureCLI@2
+    displayName: "Ejecutar Ansible (${{ parameters.action }})"
+    condition: eq('${{ parameters.tool }}', 'ansible')
+    inputs:
+      azureSubscription: $(AZURE_SERVICE_CONNECTION)
+      scriptType: "bash"
+      scriptLocation: "inlineScript"
+      inlineScript: |
+        pip install ansible "azure-mgmt-storage>=21.0.0" "azure-mgmt-resource>=23.0.0" "azure-identity>=1.15.0"
+        ansible-galaxy collection install -r ansible/requirements.yml
+        if [ "${{ parameters.action }}" == "deploy" ]; then
+          ansible-playbook ansible/playbook.yml \
+            -e "resource_group_name=${{ parameters.resourceGroup }}" \
+            -e "storage_account_name=${{ parameters.storageAccount }}" \
+            -e "location=spaincentral"
+        fi
+
+  # ----------------------------------------------------------------------------
+  # SUITE DE PRUEBAS DE CUMPLIMIENTO WORM (DÍA 2)
+  # ----------------------------------------------------------------------------
+  - task: AzureCLI@2
+    displayName: "Ejecutar Compliance Test WORM (Día 2)"
+    condition: eq('${{ parameters.action }}', 'compliance-test')
+    inputs:
+      azureSubscription: $(AZURE_SERVICE_CONNECTION)
+      scriptType: "bash"
+      scriptLocation: "inlineScript"
+      inlineScript: |
+        chmod +x ./scripts/test-worm-compliance.sh
+        ./scripts/test-worm-compliance.sh \
+          -g "${{ parameters.resourceGroup }}" \
+          -s "${{ parameters.storageAccount }}" \
+          -c "facturas"

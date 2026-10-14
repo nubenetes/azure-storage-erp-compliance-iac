@@ -3,8 +3,8 @@
 ---
 
 ### 🧭 Navegación de la Documentación
-| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 **Integración ERP** |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 **Integración ERP** | 🚀 [Guía CI/CD](CICD_AUTOMATION_GUIDE.md) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 
 ---
 
@@ -95,6 +95,7 @@ az storage blob set-tier \
 
 * ⬅️ **Anterior**: [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
 * 🏠 **Inicio**: [README Principal](../README.md)
+* ➡️ **Siguiente**: [Automatización CI/CD Multiplataforma](CICD_AUTOMATION_GUIDE.md)
 * 📑 **Índice Completo de Documentación**:
   1. 🏛️ [Arquitectura Técnica](ARCHITECTURE.md)
   2. ⚖️ [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
@@ -103,4 +104,6 @@ az storage blob set-tier \
   5. 🖱️ [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
   6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
   7. 🔌 **Guía de Integración ERP y Rehidratación** (Documento actual)
+  8. 🚀 [Automatización CI/CD Multiplataforma](CICD_AUTOMATION_GUIDE.md)
+
 

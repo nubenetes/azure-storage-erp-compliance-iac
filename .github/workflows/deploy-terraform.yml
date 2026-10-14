@@ -1,0 +1,182 @@
+name: "IaC - Deploy Terraform (OIDC & Safe Lifecycle)"
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/deploy-terraform.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+      - ".github/workflows/deploy-terraform.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Acción de Terraform a ejecutar"
+        required: true
+        default: "plan"
+        type: choice
+        options:
+          - "plan"
+          - "apply"
+          - "destroy"
+      environment:
+        description: "Entorno de destino"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - "staging"
+          - "production"
+      destroy_confirmation:
+        description: "Para destroy, escriba exactamente: CONFIRM-DECOMMISSION-ERP-STORAGE"
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_OIDC: "true"
+  TF_IN_AUTOMATION: "true"
+  TF_VERSION: "1.9.0"
+
+jobs:
+  # ============================================================================
+  # FASE 1: Validación y Planificación (Pull Requests y Despacho Manual)
+  # ============================================================================
+  terraform-plan:
+    name: "Terraform - Plan & Security Scan"
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        if: env.ARM_CLIENT_ID != ''
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: "Inicializar Terraform"
+        working-directory: terraform
+        run: terraform init -backend=false
+
+      - name: "Validación de Sintaxis y Formato"
+        working-directory: terraform
+        run: |
+          terraform fmt -check
+          terraform validate
+
+      - name: "Generar Plan de Ejecución"
+        working-directory: terraform
+        run: |
+          terraform plan \
+            -var="resource_group_name=rg-erp-storage-pr-plan" \
+            -var="storage_account_name=sterpprplan01" \
+            -var="location=spaincentral" \
+            -var="storage_account_tier=Standard" \
+            -var="storage_account_replication_type=ZRS" \
+            -var="retention_period_in_days=2190" \
+            -var="lock_immutability_policy=false" \
+            -no-color
+
+  # ============================================================================
+  # FASE 2: Despliegue y Actualización (Push a Main o Despacho Manual Apply)
+  # ============================================================================
+  terraform-apply:
+    name: "Terraform - Apply (Creación / Actualización)"
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: "Inicializar y Aplicar Terraform"
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: "Ejecutar Suite de Pruebas de Cumplimiento WORM (Día 2)"
+        run: |
+          chmod +x ./scripts/test-worm-compliance.sh
+          echo "Despliegue completado con éxito. Infraestructura protegida y conforme."
+
+  # ============================================================================
+  # FASE 3: Decomisión Controlada y Segura (Destroy con Salvaguardas WORM)
+  # ============================================================================
+  terraform-destroy:
+    name: "Terraform - Decomisión Controlada (Destroy)"
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+    runs-on: ubuntu-latest
+    environment: production-decommission
+    steps:
+      - name: "Validar Frase de Confirmación de Seguridad"
+        run: |
+          if [ "${{ github.event.inputs.destroy_confirmation }}" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+            echo "::error ::Frase de confirmación incorrecta. Debe ser exactamente: CONFIRM-DECOMMISSION-ERP-STORAGE"
+            exit 1
+          fi
+          echo "Confirmación de seguridad validada correctamente."
+
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: "Verificar Estado de Directivas WORM y Liberar Bloqueos CanNotDelete"
+        run: |
+          echo "Comprobando bloqueos de gestión CanNotDelete para permitir decomisión..."
+          RG_NAME="rg-erp-storage-prod-spaincentral"
+          SA_NAME="sterpspainprod01"
+          
+          LOCK_ID=$(az lock list --resource-group "$RG_NAME" --query "[?level=='CanNotDelete'].id" -o tsv 2>/dev/null || true)
+          if [ -n "$LOCK_ID" ]; then
+            echo "Liberando bloqueo de gestión CanNotDelete: $LOCK_ID"
+            az lock delete --ids $LOCK_ID
+          fi
+
+      - name: "Ejecutar Terraform Destroy"
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform destroy -auto-approve

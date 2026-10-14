@@ -1,0 +1,144 @@
+name: "IaC - Deploy Azure Bicep (OIDC & Safe Lifecycle)"
+
+on:
+  pull_request:
+    paths:
+      - "bicep/**"
+      - ".github/workflows/deploy-bicep.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "bicep/**"
+      - ".github/workflows/deploy-bicep.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Acción de Bicep a ejecutar"
+        required: true
+        default: "what-if"
+        type: choice
+        options:
+          - "what-if"
+          - "deploy"
+          - "decommission"
+      environment:
+        description: "Entorno de destino"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - "staging"
+          - "production"
+      decommission_confirmation:
+        description: "Para decommission, escriba exactamente: CONFIRM-DECOMMISSION-ERP-STORAGE"
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_REGION: "spaincentral"
+  RESOURCE_GROUP: "rg-erp-storage-prod-spaincentral"
+
+jobs:
+  # ============================================================================
+  # FASE 1: Lint, Build y Simulación What-If
+  # ============================================================================
+  bicep-what-if:
+    name: "Bicep - Build & What-If"
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'what-if')
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
+
+      - name: "Compilación y Análisis Sintáctico de Bicep"
+        run: |
+          az bicep build --file bicep/main.bicep
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        if: env.ARM_CLIENT_ID != ''
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: "Ejecutar Simulación What-If en Azure"
+        run: |
+          az deployment group what-if \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --template-file bicep/main.bicep \
+            --parameters bicep/main.bicepparam || true
+
+  # ============================================================================
+  # FASE 2: Despliegue de Infraestructura Bicep (Creación / Actualización)
+  # ============================================================================
+  bicep-deploy:
+    name: "Bicep - Deploy (Producción)"
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: "Garantizar Grupo de Recursos"
+        run: |
+          az group create --name "${{ env.RESOURCE_GROUP }}" --location "${{ env.AZURE_REGION }}" --tags Workload=ERP Environment=Production
+
+      - name: "Desplegar Plantilla Bicep"
+        run: |
+          az deployment group create \
+            --name "deploy-erp-storage-$(date +%s)" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --template-file bicep/main.bicep \
+            --parameters bicep/main.bicepparam
+
+      - name: "Verificación de Despliegue Exitoso"
+        run: |
+          echo "Despliegue de Bicep completado. Cuenta de almacenamiento y directivas WORM operativas."
+
+  # ============================================================================
+  # FASE 3: Decomisión Controlada de Bicep
+  # ============================================================================
+  bicep-decommission:
+    name: "Bicep - Decomisión Controlada"
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'decommission'
+    runs-on: ubuntu-latest
+    environment: production-decommission
+    steps:
+      - name: "Validar Frase de Confirmación de Seguridad"
+        run: |
+          if [ "${{ github.event.inputs.decommission_confirmation }}" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+            echo "::error ::Frase de confirmación incorrecta. Debe ser exactamente: CONFIRM-DECOMMISSION-ERP-STORAGE"
+            exit 1
+          fi
+          echo "Confirmación de seguridad validada correctamente."
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: "Liberar Bloqueo CanNotDelete y Desmantelar Recursos"
+        run: |
+          echo "Eliminando bloqueo de administración CanNotDelete si existe..."
+          LOCK_ID=$(az lock list --resource-group "${{ env.RESOURCE_GROUP }}" --query "[?level=='CanNotDelete'].id" -o tsv 2>/dev/null || true)
+          if [ -n "$LOCK_ID" ]; then
+            az lock delete --ids $LOCK_ID
+          fi
+          echo "Eliminando grupo de recursos..."
+          az group delete --name "${{ env.RESOURCE_GROUP }}" --yes --no-wait

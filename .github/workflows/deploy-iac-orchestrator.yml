@@ -1,0 +1,127 @@
+name: "IaC - Multi-Tool Orchestrator (CLI, Ansible, PowerShell, Bicep, Terraform)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      tool:
+        description: "Herramienta de IaC a ejecutar"
+        required: true
+        default: "azure-cli"
+        type: choice
+        options:
+          - "azure-cli"
+          - "powershell"
+          - "ansible"
+          - "bicep"
+          - "terraform"
+      action:
+        description: "Operación del ciclo de vida"
+        required: true
+        default: "deploy"
+        type: choice
+        options:
+          - "deploy"
+          - "compliance-test"
+          - "decommission"
+      resource_group:
+        description: "Grupo de recursos de destino"
+        required: true
+        default: "rg-erp-storage-prod-spaincentral"
+        type: string
+      storage_account:
+        description: "Nombre de la cuenta de almacenamiento"
+        required: false
+        default: "sterpspainprod01"
+        type: string
+      confirmation:
+        description: "Obligatorio para decommission: CONFIRM-DECOMMISSION-ERP-STORAGE"
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  orchestrate-iac:
+    name: "Ejecutar ${{ github.event.inputs.tool }} - ${{ github.event.inputs.action }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
+
+      - name: "Validar Confirmación de Seguridad en Decomisión"
+        if: github.event.inputs.action == 'decommission'
+        run: |
+          if [ "${{ github.event.inputs.confirmation }}" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+            echo "::error ::Frase de confirmación obligatoria para decommission: CONFIRM-DECOMMISSION-ERP-STORAGE"
+            exit 1
+          fi
+
+      - name: "Iniciar Sesión en Azure mediante OIDC"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ------------------------------------------------------------------------
+      # OPCIÓN 1: Azure CLI
+      # ------------------------------------------------------------------------
+      - name: "Ejecutar Azure CLI Deploy"
+        if: github.event.inputs.tool == 'azure-cli' && github.event.inputs.action == 'deploy'
+        run: |
+          chmod +x ./azure-cli/*.sh
+          ./azure-cli/deploy.sh \
+            -g "${{ github.event.inputs.resource_group }}" \
+            -s "${{ github.event.inputs.storage_account }}" \
+            -l "spaincentral" \
+            -r "Standard_ZRS"
+
+      - name: "Ejecutar Azure CLI Decommission"
+        if: github.event.inputs.tool == 'azure-cli' && github.event.inputs.action == 'decommission'
+        run: |
+          chmod +x ./azure-cli/*.sh
+          ./azure-cli/destroy.sh \
+            -g "${{ github.event.inputs.resource_group }}" \
+            -s "${{ github.event.inputs.storage_account }}" \
+            --force
+
+      # ------------------------------------------------------------------------
+      # OPCIÓN 2: PowerShell (Az)
+      # ------------------------------------------------------------------------
+      - name: "Ejecutar PowerShell Deploy"
+        if: github.event.inputs.tool == 'powershell' && github.event.inputs.action == 'deploy'
+        shell: pwsh
+        run: |
+          ./powershell/Deploy-AzureStorageWORM.ps1 `
+            -ResourceGroupName "${{ github.event.inputs.resource_group }}" `
+            -StorageAccountName "${{ github.event.inputs.storage_account }}" `
+            -Location "spaincentral" `
+            -SkuName "Standard_ZRS" `
+            -RetentionDays 2190
+
+      # ------------------------------------------------------------------------
+      # OPCIÓN 3: Ansible
+      # ------------------------------------------------------------------------
+      - name: "Ejecutar Ansible Deploy"
+        if: github.event.inputs.tool == 'ansible' && github.event.inputs.action == 'deploy'
+        run: |
+          pip install ansible "azure-mgmt-storage>=21.0.0" "azure-mgmt-resource>=23.0.0" "azure-identity>=1.15.0"
+          ansible-galaxy collection install -r ansible/requirements.yml
+          ansible-playbook ansible/playbook.yml \
+            -e "resource_group_name=${{ github.event.inputs.resource_group }}" \
+            -e "storage_account_name=${{ github.event.inputs.storage_account }}" \
+            -e "location=spaincentral"
+
+      # ------------------------------------------------------------------------
+      # FASE DE COMPLIANCE DÍA 2
+      # ------------------------------------------------------------------------
+      - name: "Ejecutar Suite de Cumplimiento WORM"
+        if: github.event.inputs.action == 'compliance-test'
+        run: |
+          chmod +x ./scripts/test-worm-compliance.sh
+          ./scripts/test-worm-compliance.sh \
+            -g "${{ github.event.inputs.resource_group }}" \
+            -s "${{ github.event.inputs.storage_account }}" \
+            -c "facturas"

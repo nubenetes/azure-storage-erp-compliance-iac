@@ -1,0 +1,142 @@
+# ==============================================================================
+# Azure DevOps Pipeline: Azure Bicep Enterprise Lifecycle (OIDC & Safe Decommission)
+# ==============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - bicep/**
+      - azure-pipelines/azure-pipelines-bicep.yml
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - bicep/**
+      - azure-pipelines/azure-pipelines-bicep.yml
+
+parameters:
+  - name: action
+    displayName: "Acción de Bicep a ejecutar"
+    type: string
+    default: "what-if"
+    values:
+      - "what-if"
+      - "deploy"
+      - "decommission"
+  - name: decommissionConfirmation
+    displayName: "Para decommission, escriba exactamente: CONFIRM-DECOMMISSION-ERP-STORAGE"
+    type: string
+    default: ""
+
+variables:
+  - name: AZURE_SERVICE_CONNECTION
+    value: "sc-azure-spaincentral-oidc"
+  - name: RESOURCE_GROUP
+    value: "rg-erp-storage-prod-spaincentral"
+  - name: LOCATION
+    value: "spaincentral"
+
+pool:
+  vmImage: "ubuntu-latest"
+
+stages:
+  # ----------------------------------------------------------------------------
+  # ETAPA 1: Lint, Build y What-If
+  # ----------------------------------------------------------------------------
+  - stage: LintAndWhatIf
+    displayName: "1. Build y Simulación What-If"
+    condition: or(eq(variables['Build.Reason'], 'PullRequest'), eq('${{ parameters.action }}', 'what-if'))
+    jobs:
+      - job: BicepWhatIf
+        displayName: "Bicep Lint y What-If"
+        steps:
+          - script: |
+              az bicep build --file bicep/main.bicep
+            displayName: "Compilación de Bicep (CLI)"
+
+          - task: AzureCLI@2
+            displayName: "Simulación What-If en Azure"
+            inputs:
+              azureSubscription: $(AZURE_SERVICE_CONNECTION)
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                az deployment group what-if \
+                  --resource-group "$(RESOURCE_GROUP)" \
+                  --template-file bicep/main.bicep \
+                  --parameters bicep/main.bicepparam || true
+
+  # ----------------------------------------------------------------------------
+  # ETAPA 2: Despliegue en Producción
+  # ----------------------------------------------------------------------------
+  - stage: DeployProduction
+    displayName: "2. Despliegue Bicep en Producción"
+    dependsOn: []
+    condition: or(and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'IndividualCI')), eq('${{ parameters.action }}', 'deploy'))
+    jobs:
+      - deployment: DeployJob
+        displayName: "Aprobación y Despliegue Bicep"
+        environment: "production-erp-storage"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: "Garantizar Grupo de Recursos y Desplegar Bicep"
+                  inputs:
+                    azureSubscription: $(AZURE_SERVICE_CONNECTION)
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    inlineScript: |
+                      az group create --name "$(RESOURCE_GROUP)" --location "$(LOCATION)" --tags Workload=ERP Environment=Production
+                      az deployment group create \
+                        --name "ado-bicep-$(Build.BuildId)" \
+                        --resource-group "$(RESOURCE_GROUP)" \
+                        --template-file bicep/main.bicep \
+                        --parameters bicep/main.bicepparam
+
+  # ----------------------------------------------------------------------------
+  # ETAPA 3: Decomisión Controlada
+  # ----------------------------------------------------------------------------
+  - stage: DecommissionSafe
+    displayName: "3. Decomisión Segura de Bicep"
+    dependsOn: []
+    condition: eq('${{ parameters.action }}', 'decommission')
+    jobs:
+      - deployment: DestroyJob
+        displayName: "Liberación de Bloqueos y Eliminación"
+        environment: "production-decommission-gate"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - script: |
+                    if [ "${{ parameters.decommissionConfirmation }}" != "CONFIRM-DECOMMISSION-ERP-STORAGE" ]; then
+                      echo "##vso[task.logissue type=error]Frase de confirmación incorrecta."
+                      exit 1
+                    fi
+                  displayName: "Validación de Seguridad"
+
+                - task: AzureCLI@2
+                  displayName: "Liberar Bloqueo CanNotDelete y Borrar Recursos"
+                  inputs:
+                    azureSubscription: $(AZURE_SERVICE_CONNECTION)
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    inlineScript: |
+                      LOCK_ID=$(az lock list --resource-group "$(RESOURCE_GROUP)" --query "[?level=='CanNotDelete'].id" -o tsv 2>/dev/null || true)
+                      if [ -n "$LOCK_ID" ]; then
+                        echo "Eliminando bloqueo: $LOCK_ID"
+                        az lock delete --ids $LOCK_ID
+                      fi
+                      az group delete --name "$(RESOURCE_GROUP)" --yes --no-wait
