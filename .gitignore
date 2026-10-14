@@ -1,0 +1,41 @@
+# Terraform / OpenTofu
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!terraform.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Azure CLI / PowerShell
+.azure/
+*.publishsettings
+
+# Ansible
+*.retry
+.ansible/
+collections/
+
+# Bicep
+*.arm.json
+
+# Logs & Environment
+*.log
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

@@ -1,0 +1,115 @@
+---
+# Tasks for azure_storage_worm role
+
+- name: Ensure Azure Resource Group exists in Spain Central
+  azure.azcollection.azure_rm_resourcegroup:
+    name: "{{ resource_group_name }}"
+    location: "{{ location }}"
+    tags: "{{ tags }}"
+
+- name: Provision Storage Account (StorageV2 with Standard_ZRS)
+  azure.azcollection.azure_rm_storageaccount:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{ storage_account_name }}"
+    location: "{{ location }}"
+    account_type: "{{ account_type }}"
+    kind: StorageV2
+    access_tier: "{{ access_tier }}"
+    minimum_tls_version: "{{ min_tls_version }}"
+    allow_blob_public_access: "{{ allow_blob_public_access }}"
+    https_only: "{{ https_only }}"
+    tags: "{{ tags }}"
+  register: storage_account_out
+
+- name: Configure Data Protection (Soft Delete 30d, Versioning, Change Feed)
+  ansible.builtin.command: >
+    az storage account blob-service-properties update
+    --account-name "{{ storage_account_name }}"
+    --resource-group "{{ resource_group_name }}"
+    --enable-delete-retention true
+    --delete-retention-days "{{ soft_delete_retention_days }}"
+    --enable-container-delete-retention true
+    --container-delete-retention-days "{{ soft_delete_retention_days }}"
+    --enable-versioning true
+    --enable-change-feed true
+  changed_when: true
+
+- name: Create ERP Blob Containers
+  azure.azcollection.azure_rm_storageblob:
+    resource_group: "{{ resource_group_name }}"
+    storage_account_name: "{{ storage_account_name }}"
+    container: "{{ item }}"
+    public_access: "off"
+  loop: "{{ containers }}"
+
+- name: Configure WORM Immutability Policy (Art. 30 Código de Comercio)
+  ansible.builtin.command: >
+    az storage container immutability-policy create
+    --account-name "{{ storage_account_name }}"
+    --container-name "{{ item }}"
+    --period "{{ immutability_retention_days }}"
+    --allow-protected-append-writes "{{ allow_protected_append_writes }}"
+    --auth-mode login
+  loop: "{{ containers }}"
+  register: worm_policy_result
+  failed_when:
+    - worm_policy_result.rc != 0
+    - "'already exists' not in worm_policy_result.stderr | lower"
+  changed_when: worm_policy_result.rc == 0
+
+- name: Apply Lifecycle Management Policy (Tiering Hot -> Cool -> Cold -> Archive)
+  ansible.builtin.shell: |
+    cat <<'EOF' > /tmp/ansible_lifecycle_{{ storage_account_name }}.json
+    {
+      "rules": [
+        {
+          "enabled": true,
+          "name": "tier-erp-invoices-and-orders",
+          "type": "Lifecycle",
+          "definition": {
+            "filters": {
+              "blobTypes": ["blockBlob"],
+              "prefixMatch": ["facturas/", "pedidos/"]
+            },
+            "actions": {
+              "baseBlob": {
+                "tierToCool": { "daysAfterModificationGreaterThan": 90 },
+                "tierToCold": { "daysAfterModificationGreaterThan": 365 },
+                "tierToArchive": { "daysAfterModificationGreaterThan": 1095 }
+              },
+              "snapshot": {
+                "tierToCool": { "daysAfterCreationGreaterThan": 90 },
+                "tierToCold": { "daysAfterCreationGreaterThan": 365 },
+                "tierToArchive": { "daysAfterCreationGreaterThan": 1095 }
+              },
+              "version": {
+                "tierToCool": { "daysAfterCreationGreaterThan": 90 },
+                "tierToCold": { "daysAfterCreationGreaterThan": 365 },
+                "tierToArchive": { "daysAfterCreationGreaterThan": 1095 }
+              }
+            }
+          }
+        }
+      ]
+    }
+    EOF
+    az storage account management-policy create \
+      --account-name "{{ storage_account_name }}" \
+      --resource-group "{{ resource_group_name }}" \
+      --policy @/tmp/ansible_lifecycle_{{ storage_account_name }}.json
+    rm -f /tmp/ansible_lifecycle_{{ storage_account_name }}.json
+  changed_when: true
+
+- name: Apply CanNotDelete Management Lock
+  when: enable_resource_lock | bool
+  ansible.builtin.command: >
+    az lock create
+    --name "lock-{{ storage_account_name }}-prevent-deletion"
+    --resource "{{ storage_account_out.state.id | default(storage_account_name) }}"
+    --lock-type CanNotDelete
+    --notes "Protects ERP compliance storage account against accidental or malicious deletion."
+  register: lock_result
+  failed_when:
+    - lock_result.rc != 0
+    - "'already exists' not in lock_result.stderr | lower"
+  changed_when: lock_result.rc == 0

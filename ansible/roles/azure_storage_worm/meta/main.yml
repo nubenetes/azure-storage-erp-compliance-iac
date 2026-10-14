@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  author: "Nubenetes Team"
+  description: "Enterprise Ansible role for Azure Blob Storage WORM compliance and cost-optimized tiering in Spain Central."
+  company: "Nubenetes"
+  license: "Apache-2.0"
+  min_ansible_version: "2.14"
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+  galaxy_tags:
+    - azure
+    - cloud
+    - storage
+    - worm
+    - compliance
+    - verifactu
+    - spain
+dependencies: []

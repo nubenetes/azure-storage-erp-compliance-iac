@@ -1,0 +1,41 @@
+# Example configuration for production ERP in Spain Central
+environment              = "prod"
+project_name             = "erp"
+location                 = "spaincentral"
+account_replication_type = "ZRS" # 3 availability zones in Madrid
+
+# Storage Account naming (leave empty to auto-generate)
+# storage_account_name   = "sterpspaincentral01"
+
+# Security & Compliance
+min_tls_version                 = "TLS1_2"
+allow_nested_items_to_be_public = false
+shared_access_key_enabled       = true # Set false if using pure Entra ID RBAC
+soft_delete_retention_days      = 30
+
+# Containers & WORM Immutability (Art. 30 Código de Comercio)
+container_names                 = ["facturas", "pedidos"]
+immutability_retention_days     = 2190 # 6 calendar years
+lock_immutability_policy        = false # Keep false until tested, then set true for irreversible WORM
+protected_append_writes_enabled = true
+
+# Lifecycle Tiering Transitions
+tier_to_cool_days    = 90
+tier_to_cold_days    = 365
+tier_to_archive_days = 1095
+
+# Protection
+enable_resource_lock = true
+
+# Network Rules (Optional firewall restriction)
+network_rules_default_action = "Allow"
+allowed_ip_ranges            = []
+# allowed_ip_ranges          = ["80.25.10.12/32"] # Corporate ERP outbound public IP
+
+tags = {
+  Workload        = "ERP-Document-Archive"
+  ManagedBy       = "Terraform"
+  LegalCompliance = "Codigo-de-Comercio-Art30-VeriFactu"
+  Country         = "Spain"
+  CostCenter      = "IT-Finance"
+}

@@ -1,0 +1,25 @@
+---
+# Defaults for azure_storage_worm role
+environment_name: "prod"
+location: "spaincentral"
+resource_group_name: "rg-erp-storage-prod-spaincentral"
+storage_account_name: "sterpprod{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+account_type: "Standard_ZRS"
+access_tier: "Hot"
+min_tls_version: "TLS1_2"
+allow_blob_public_access: false
+https_only: true
+soft_delete_retention_days: 30
+immutability_retention_days: 2190
+lock_immutability_policy: false
+allow_protected_append_writes: true
+enable_resource_lock: true
+containers:
+  - "facturas"
+  - "pedidos"
+
+tags:
+  Workload: "ERP-Document-Archive"
+  LegalCompliance: "Codigo-de-Comercio-Art30-VeriFactu"
+  Country: "Spain"
+  ManagedBy: "Ansible"

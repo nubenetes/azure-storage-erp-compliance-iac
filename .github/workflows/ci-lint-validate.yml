@@ -1,0 +1,101 @@
+name: "CI - Validate & Lint IaC Solutions"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  validate-terraform:
+    name: "Validate Terraform / OpenTofu"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Check Terraform Formatting
+        run: terraform fmt -check -diff
+        working-directory: terraform
+
+      - name: Initialize Terraform Providers
+        run: terraform init -backend=false
+        working-directory: terraform
+
+      - name: Validate Terraform Code
+        run: terraform validate
+        working-directory: terraform
+
+  validate-bicep:
+    name: "Validate Azure Bicep Templates"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build and Validate Bicep
+        run: |
+          az bicep build --file bicep/main.bicep
+          for f in bicep/modules/*.bicep; do
+            echo "Validating $f..."
+            az bicep build --file "$f"
+          done
+
+  validate-scripts:
+    name: "Validate Bash & PowerShell Syntax"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Shell Scripts (bash -n)
+        run: |
+          for script in azure-cli/*.sh; do
+            echo "Checking syntax: $script"
+            bash -n "$script"
+          done
+
+      - name: Validate PowerShell Scripts
+        shell: pwsh
+        run: |
+          $scripts = Get-ChildItem -Path ./powershell -Filter *.ps1
+          foreach ($script in $scripts) {
+              Write-Host "Checking PowerShell syntax: $($script.FullName)"
+              $errors = @()
+              [System.Management.Automation.Language.Parser]::ParseFile($script.FullName, [ref]$null, [ref]$errors)
+              if ($errors.Count -gt 0) {
+                  $errors | ForEach-Object { Write-Error $_ }
+                  exit 1
+              }
+          }
+          Write-Host "All PowerShell scripts parsed successfully!"
+
+  validate-ansible-yaml:
+    name: "Validate Ansible & YAML Files"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate YAML
+        run: |
+          python3 -c '
+          import yaml, glob, sys
+          files = glob.glob("ansible/**/*.yml", recursive=True) + glob.glob(".github/**/*.yml", recursive=True)
+          for f in files:
+              print(f"Checking {f}...")
+              with open(f) as stream:
+                  yaml.safe_load(stream)
+          print("All YAML files validated successfully.")
+          '

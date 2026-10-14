@@ -1,0 +1,25 @@
+---
+# Playbook: Deploy Azure Storage ERP WORM & Cost-Optimized Tiering
+# Target Region: spaincentral
+# Author: Nubenetes Team
+
+- name: Deploy Azure Blob Storage ERP Compliance Architecture
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    environment_name: "prod"
+    location: "spaincentral"
+    resource_group_name: "rg-erp-storage-prod-spaincentral"
+    # storage_account_name: "sterpprod01" # Set if you want a fixed name
+    account_type: "Standard_ZRS"
+    immutability_retention_days: 2190
+    soft_delete_retention_days: 30
+    enable_resource_lock: true
+    containers:
+      - "facturas"
+      - "pedidos"
+
+  roles:
+    - role: azure_storage_worm
