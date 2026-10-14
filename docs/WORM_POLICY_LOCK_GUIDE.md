@@ -1,73 +1,73 @@
-# Operational Guide: WORM Immutability Policy & Policy Lock Mechanics
+# Guía Operativa: Directiva de Inmutabilidad WORM y Mecánica de Bloqueo Definitivo (*Policy Lock*)
 
 > [!CAUTION]
-> **READ CAREFULLY BEFORE EXECUTING A POLICY LOCK IN PRODUCTION**
+> **LEA CON ATENCIÓN ANTES DE EJECUTAR UN BLOQUEO DE DIRECTIVA (*POLICY LOCK*) EN PRODUCCIÓN**
 > 
-> Once an Azure Blob Storage immutability policy is **LOCKED**, it transitions into an irreversible state.
-> **No one** — including the Azure Subscription Owner, Microsoft Global Administrator, or Microsoft Azure Support Engineering — has the technical or administrative capability to delete the policy, shorten the retention duration, or delete the protected storage containers or blobs until the retention timer has fully elapsed (e.g., 2,190 days / 6 years).
+> Una vez que una directiva de inmutabilidad en Azure Blob Storage pasa a estado **BLOQUEADA (*LOCKED*)**, la transición es **ESTRICTAMENTE IRREVERSIBLE**.
+> **Absolutamente nadie** —incluyendo el Propietario de la Suscripción (*Subscription Owner*), el Administrador Global de Microsoft Entra o el soporte técnico y de ingeniería de Microsoft Azure— posee la capacidad técnica o administrativa de anular la directiva, acortar el plazo de retención ni eliminar los contenedores o facturas protegidas hasta que haya transcurrido íntegramente el periodo configurado (por ejemplo, 2.190 días / 6 años naturales).
 
 ---
 
-## 1. Immutability Policy Lifecycle: Unlocked vs. Locked
+## 1. Ciclo de Vida de la Directiva de Inmutabilidad: Desbloqueada (*Unlocked*) vs. Bloqueada (*Locked*)
 
-Azure Blob Storage provides two states for time-based retention policies:
+Azure Blob Storage proporciona dos estados operativos para las directivas de retención temporal:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Unlocked: Create Policy (2,190 days)
+    [*] --> Desbloqueada: Crear Directiva (2.190 días)
     
-    state Unlocked {
-        [*] --> TestWrites: Upload Invoices / Test Files
-        TestWrites --> VerifyImmutable: Attempts to overwrite/delete FAIL
-        VerifyImmutable --> CanExtendOrShorten: Retention period can be adjusted
-        CanExtendOrShorten --> CanDeletePolicy: Policy can be deleted if needed
+    state Desbloqueada {
+        [*] --> PruebasEscritura: Carga de Facturas / Pruebas
+        PruebasEscritura --> VerificarInmutable: Intentos de sobrescritura/borrado FALLAN
+        VerificarInmutable --> AjustarPeriodo: El plazo de retención se puede modificar
+        AjustarPeriodo --> EliminarDirectiva: La directiva puede eliminarse si es necesario
     }
     
-    Unlocked --> Locked: Explicit Admin Lock Action (IRREVERSIBLE)
+    Desbloqueada --> Bloqueada: Bloqueo Explícito por Administrador (IRREVERSIBLE)
     
-    state Locked {
-        [*] --> StrictWORM: WORM Mode Fully Enforced
-        StrictWORM --> CantDeleteData: Deletion & modification strictly prohibited
-        CantDeleteData --> CantDeletePolicy: Policy cannot be removed
-        CantDeletePolicy --> CantShortenPeriod: Retention can ONLY be lengthened (e.g. to 10 yrs)
+    state Bloqueada {
+        [*] --> ModoWORMEstricto: Modo WORM Plenamente Activo
+        ModoWORMEstricto --> ImposibleBorrarDatos: Prohibida modificación y eliminación
+        ImposibleBorrarDatos --> ImposibleBorrarDirectiva: La directiva no se puede revocar
+        ImposibleBorrarDirectiva --> SoloPermiteAmpliar: El plazo SOLO puede incrementarse (ej. a 10 años)
     }
 ```
 
-### State Comparison Matrix
+### Matriz Comparativa de Estados
 
-| Capability / Attribute | Unlocked State (Default in this IaC) | Locked State (Production Legal Mode) |
+| Capacidad / Atributo | Estado Desbloqueado (*Unlocked* - Por defecto en IaC) | Estado Bloqueado (*Locked* - Modo Legal Producción) |
 | :--- | :--- | :--- |
-| **Blob Deletion Prohibited** | ✅ Yes (during retention period) | ✅ Yes (during retention period) |
-| **Blob Overwrite Prohibited** | ✅ Yes | ✅ Yes |
-| **Append Writes Allowed** | ✅ Yes (if configured) | ✅ Yes (if configured) |
-| **Policy Can Be Deleted** | ✅ Yes (by authorized admin) | ❌ **NO (Impossible)** |
-| **Retention Can Be Shortened** | ✅ Yes | ❌ **NO (Impossible)** |
-| **Retention Can Be Extended** | ✅ Yes | ✅ Yes (can extend up to 146,000 days) |
-| **Container Can Be Deleted** | ❌ Only if empty | ❌ Only if empty and retention expired |
-| **Storage Account Can Be Deleted** | ❌ Prohibited if blobs are locked | ❌ Prohibited until all blobs expire |
-| **Regulatory Validation (SEC 17a-4 / VeriFactu)** | ⚠️ Not considered fully compliant (policy is mutable) | ✅ **100% Legally Compliant (strict WORM)** |
+| **Eliminación de Blobs Prohibida** | ✅ Sí (durante el periodo de retención) | ✅ Sí (durante el periodo de retención) |
+| **Sobrescritura de Blobs Prohibida** | ✅ Sí | ✅ Sí |
+| **Escrituras Adicionales (*Append Blobs*) Permitidas** | ✅ Sí (si está habilitado `allowProtectedAppendWrites`) | ✅ Sí (si está habilitado `allowProtectedAppendWrites`) |
+| **La Directiva Puede Eliminarse** | ✅ Sí (por administradores autorizados) | ❌ **NO (Técnicamente imposible)** |
+| **El Plazo de Retención Puede Acortarse** | ✅ Sí | ❌ **NO (Técnicamente imposible)** |
+| **El Plazo de Retención Puede Ampliarse** | ✅ Sí | ✅ Sí (puede ampliarse hasta un máximo de 146.000 días) |
+| **El Contenedor Puede Eliminarse** | ❌ Solo si está completamente vacío | ❌ Solo si está vacío y todas las retenciones han expirado |
+| **La Cuenta de Almacenamiento Puede Eliminarse** | ❌ Bloqueada si contiene blobs protegidos | ❌ Bloqueada hasta que todos los blobs protegidos expiren |
+| **Validez Regulatoria (SEC 17a-4 / VeriFactu / Ley Antifraude)** | ⚠️ Cumplimiento preliminar (directiva mutable) | ✅ **100% Cumplimiento Legal Estricto (WORM inmutable)** |
 
 ---
 
-## 2. Pre-Lock Safety Checklist
+## 2. Lista de Comprobación de Seguridad Previa al Bloqueo (*Pre-Lock Checklist*)
 
-Before transitioning a container immutability policy from `Unlocked` to `Locked`, execute this checklist:
+Antes de realizar la transición de la directiva de inmutabilidad de un contenedor de `Unlocked` a `Locked`, complete rigurosamente los siguientes puntos:
 
-1. [ ] **Container Name & Path**: Confirm the container (`facturas` or `pedidos`) is named according to your corporate naming convention.
-2. [ ] **Retention Duration**: Confirm `2190` days (6 years) is the intended period.
-3. [ ] **Append Blobs Configuration**: Verify `allowProtectedAppendWrites = true` is enabled if your ERP appends audit records.
-4. [ ] **Subscription & Billing**: Confirm the Azure subscription is under a stable enterprise agreement (EA / MCA / CSP) to prevent subscription cancellation while locked blobs exist.
-5. [ ] **Test File Verification**: Upload a dummy invoice and verify that `az storage blob delete` or delete via portal is rejected with HTTP `409 BlobImmutableDueToPolicy`.
+1. [ ] **Nomenclatura del Contenedor**: Confirme que el nombre del contenedor (`facturas` o `pedidos`) se ajusta al estándar corporativo definitivo.
+2. [ ] **Duración de la Retención**: Valide que `2190` días (6 años) es el periodo pactado con la asesoría fiscal y jurídica de la empresa.
+3. [ ] **Configuración de Blobs de Anexado (*Append Blobs*)**: Verifique que `allowProtectedAppendWrites = true` está activo si el ERP o el motor VeriFactu registran eventos y hashes secuenciales en los archivos.
+4. [ ] **Contrato y Facturación de la Suscripción**: Asegúrese de que la suscripción de Azure forma parte de un acuerdo corporativo estable (*Enterprise Agreement*, *MCA* o *CSP*) para evitar la cancelación involuntaria de la suscripción mientras existan blobs retenidos.
+5. [ ] **Prueba Práctica de Inmutabilidad**: Suba un documento ficticio de prueba y verifique que el comando `az storage blob delete` o el intento de borrado desde el portal es rechazado con el código HTTP `409 BlobImmutableDueToPolicy`.
 
 ---
 
-## 3. How to Lock the Policy
+## 3. Procedimiento para Bloquear la Directiva (*Lock Policy*)
 
-This repository provides automated scripts and configurations to execute the lock safely.
+Este repositorio proporciona scripts y configuraciones automatizadas para ejecutar el bloqueo de forma controlada.
 
-### Option A: Using the Provided Azure CLI Script (Recommended)
+### Opción A: Mediante el Script de Azure CLI Incluido (Recomendado)
 
-Run the dedicated interactive locking script:
+Ejecute el script interactivo con salvaguardas de confirmación:
 
 ```bash
 cd azure-cli
@@ -77,15 +77,15 @@ cd azure-cli
   --container facturas
 ```
 
-The script will:
-1. Query the current policy and display retention days and current state.
-2. Require typing the confirmation phrase: `CONFIRM-LEGAL-LOCK`.
-3. Retrieve the policy `ETag` and invoke `az storage container immutability-policy lock`.
-4. Validate that the state has transitioned to `Locked`.
+El script ejecutará las siguientes acciones:
+1. Consultará la directiva activa, mostrando los días de retención y el estado actual.
+2. Exigirá escribir manualmente la frase exacta de confirmación: `CONFIRM-LEGAL-LOCK`.
+3. Obtendrá el valor `ETag` de la directiva y llamará a `az storage container immutability-policy lock`.
+4. Verificará que el estado ha cambiado a `Locked`.
 
 ---
 
-### Option B: Using the PowerShell Script
+### Opción B: Mediante el Script de PowerShell
 
 ```powershell
 cd powershell
@@ -97,16 +97,16 @@ cd powershell
 
 ---
 
-### Option C: Using Terraform
+### Opción C: Mediante Terraform
 
-In `terraform/terraform.tfvars`:
+En el archivo `terraform/terraform.tfvars`:
 
 ```hcl
-# Set to true ONLY when you are ready to apply the permanent legal lock
+# Establecer en true ÚNICAMENTE cuando esté listo para aplicar el bloqueo legal definitivo
 lock_immutability_policy = true
 ```
 
-Then execute:
+A continuación, ejecute:
 ```bash
 terraform plan
 terraform apply
@@ -114,11 +114,11 @@ terraform apply
 
 ---
 
-### Option D: Using Azure Portal
+### Opción D: A través del Portal de Azure (Interfaz Gráfica)
 
-1. Navigate to your **Storage Account** $\rightarrow$ **Containers**.
-2. Select the container (e.g., `facturas`).
-3. Click **Access policy** in the left menu.
-4. Under **Immutable blob storage**, locate the Time-based retention policy.
-5. Click the `...` (More options) menu $\rightarrow$ **Lock policy**.
-6. Type the number of days or confirm the warning dialog.
+1. En el **Portal de Azure**, acceda a su **Cuenta de almacenamiento (*Storage account*)** $\rightarrow$ **Contenedores (*Containers*)**.
+2. Seleccione el contenedor deseado (por ejemplo, `facturas`).
+3. En el menú vertical izquierdo, haga clic en **Directiva de acceso (*Access policy*)**.
+4. En el apartado **Almacenamiento de blobs inmutable (*Immutable blob storage*)**, localice la directiva temporal.
+5. Haga clic en el botón de opciones `...` (*Más opciones*) $\rightarrow$ **Bloquear directiva (*Lock policy*)**.
+6. Escriba el número de confirmación requerido y confirme en el cuadro de diálogo de advertencia.

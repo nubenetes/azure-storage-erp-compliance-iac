@@ -1,30 +1,30 @@
-# Legal & Regulatory Compliance Framework: Spain & European Union
+# Marco Legal y Cumplimiento Normativo: España y Unión Europea
 
-This document details the Spanish and European legal foundations governing digital invoice and commercial order retention, justifying the technical choices implemented in this repository.
+Este documento detalla los fundamentos jurídicos españoles y europeos que regulan la conservación de facturas electrónicas y pedidos comerciales, justificando las decisiones técnicas y de arquitectura implementadas en este repositorio.
 
 ---
 
-## 1. Regulatory Mapping Matrix
+## 1. Matriz de Mapeo Normativo y Técnico
 
-| Regulation | Scope & Article | Legal Requirement | Technical Implementation in Azure |
+| Normativa | Ámbito y Artículo | Requisito Legal | Implementación Técnica en Azure |
 | :--- | :--- | :--- | :--- |
-| **Código de Comercio** | Art. 30.1 | Mandatory retention of commercial documents, books, and invoices for **6 years** from last entry. | Immutable WORM retention policy set to **2,190 days** (6 calendar years). |
-| **Ley General Tributaria (LGT)** | Ley 58/2003, Art. 66-70 | General tax prescription period of **4 years** for VAT, Corporate Tax, and Personal Income Tax. | Covered within the 6-year WORM policy; Tiering to Cold tier at Year 1 and Archive tier at Year 3. |
-| **Ley General Tributaria (LGT)** | Ley 58/2003, Art. 66 bis | Right of the tax administration (AEAT) to audit deductions and negative tax bases (BINs) for **10 years**. | WORM policy can be extended or historical records kept in Archive tier (~0.00099 €/GB/mo) indefinitely. |
-| **Ley Antifraude** | Ley 11/2021, Art. 29.2.j | Billing systems must guarantee **integrity, conservation, accessibility, legibility, traceability, and inalterability**. | Azure Blob Storage WORM policy prevents modification, deletion, or truncation even by Admins. |
-| **Reglamento VeriFactu** | Real Decreto 1007/2023 | Certified billing software must provide chained records (hashes), digital signing, and tamper-proof log custody. | `allowProtectedAppendWrites = true` enables appending event logs and invoice hash chains without overwrite risk. |
-| **RGPD / LOPDGDD** | RGPD (UE) 2016/679 & LO 3/2018 | Data sovereignty, protection of personal data (CIF/NIF, fiscal addresses), security measures. | Region **Spain Central (Madrid)** ensures data never leaves Spain. TLS 1.2+ and Microsoft Entra ID RBAC. |
-| **Esquema Nacional de Seguridad (ENS)** | RD 311/2022 | Security framework for public sector and entities collaborating with administration (Level: **ALTO**). | Azure Spain Central holds official **ENS Nivel Alto** certification. |
+| **Código de Comercio** | Art. 30.1 | Conservación obligatoria de libros, correspondencia y justificantes comerciales durante **6 años** desde el último asiento. | Directiva de retención inmutable WORM fijada en **2.190 días** (6 años naturales). |
+| **Ley General Tributaria (LGT)** | Ley 58/2003, Art. 66-70 | Plazo de prescripción tributaria general de **4 años** (IVA, Impuesto sobre Sociedades, IRPF). | Cubierto íntegramente por la directiva de 6 años; transición automática a nivel Frío (*Cold*) en el año 1 y Archivo (*Archive*) en el año 3. |
+| **Ley General Tributaria (LGT)** | Ley 58/2003, Art. 66 bis | Derecho de la Agencia Tributaria (AEAT) a comprobar deducciones y bases imponibles negativas (BINs) durante **10 años**. | La directiva WORM puede ampliarse y los registros históricos pueden conservarse indefinidamente en nivel Archivo (~0,00099 €/GB/mes). |
+| **Ley Antifraude** | Ley 11/2021, Art. 29.2.j | Los sistemas informáticos de facturación deben garantizar **integridad, conservación, accesibilidad, legibilidad, trazabilidad e inalterabilidad**. | El modo WORM de Azure Blob Storage imposibilita la modificación, sobrescritura o eliminación de facturas, incluso para administradores. |
+| **Reglamento VeriFactu** | Real Decreto 1007/2023 | Facturación con registros encadenados (*hash* SHA-256), firma digital y custodia de registros de eventos sin posibilidad de alteración. | `allowProtectedAppendWrites = true` habilita la adición secuencial de bloques de eventos y hashes sin riesgo de sobrescritura de datos existentes. |
+| **RGPD / LOPDGDD** | RGPD (UE) 2016/679 y LO 3/2018 | Soberanía de datos, protección de datos de carácter personal (NIF de autónomos, domicilios), medidas de seguridad técnicas y organizativas. | Región **Spain Central (Madrid)**: los datos permanecen bajo jurisdicción española/UE. Cifrado TLS 1.2+ en tránsito y AES-256 en reposo con Microsoft Entra ID RBAC. |
+| **Esquema Nacional de Seguridad (ENS)** | RD 311/2022 | Marco de seguridad para el sector público y entidades que colaboren con las administraciones públicas (Categoría: **ALTO**). | Azure Spain Central cuenta con certificación oficial auditada del **ENS Nivel Alto**. |
 
 ---
 
-## 2. Deep Dive into Applicable Laws
+## 2. Análisis Detallado de la Legislación Aplicable
 
 ### 2.1. Código de Comercio (Art. 30.1)
 > *"Los empresarios conservarán los libros, correspondencia, documentación y justificantes concernientes a su negocio, debidamente ordenados, durante seis años, a partir del último asiento realizado en los libros, salvo lo que se establezca por disposiciones generales o especiales."*
 
-* **Interpretation**: While tax law prescribes after 4 years, commercial law mandates 6 years. If a company disposes of invoices before 6 years, it faces severe penalties, liability in commercial lawsuits, and loss of evidentiary presumption.
-* **IaC Setting**: `retention_period_in_days = 2190` ($6 \times 365 = 2,190\text{ days}$).
+* **Interpretación Jurídica**: Aunque el plazo de prescripción fiscal general de la Ley General Tributaria es de 4 años, el Código de Comercio impone un deber de custodia mercantil de 6 años. La destrucción o pérdida prematura de facturas antes de los 6 años acarrea sanciones, pérdida de valor probatorio en litigios mercantiles y responsabilidad personal de los administradores societarios.
+* **Parámetro en IaC**: `retention_period_in_days = 2190` ($6 \times 365 = 2.190\text{ días}$).
 
 ---
 
@@ -32,28 +32,28 @@ This document details the Spanish and European legal foundations governing digit
 La Ley 11/2021 introdujo en el artículo 29.2.j de la LGT la obligación de que los sistemas y programas informáticos o electrónicos que soporten los procesos contables, de facturación o de gestión de quienes desarrollen actividades económicas:
 > *"Garantizarán la integridad, conservación, accesibilidad, legibilidad, trazabilidad e inalterabilidad de los registros, sin interpolaciones, omisiones o alteraciones de las que no quede la debida constancia en los sistemas mismos."*
 
-* **Interpretation**: Software or storage systems that allow deleting or altering an invoice without leaving an unalterable audit trace are illegal and subject to severe fines (up to 50,000 € for possession of non-compliant systems).
-* **IaC Setting**: Azure Blob Storage **WORM (Write Once, Read Many)** with **Policy Lock**. Blobs uploaded to the container are cryptographically secured; no user, API call, or administrator role can overwrite or delete existing records until the retention timer has elapsed.
+* **Interpretación Jurídica**: Cualquier software contable o infraestructura de almacenamiento que permita borrar o modificar una factura sin dejar rastro inalterable se considera software de doble uso o sistema infractor, con multas de hasta 50.000 € por la mera tenencia del sistema no conforme.
+* **Parámetro en IaC**: Azure Blob Storage en modo **WORM (*Write Once, Read Many*)** con **Bloqueo Definitivo de Directiva (*Policy Lock*)**. Los blobs almacenados en el contenedor quedan sellados criptográficamente; ningún usuario, script ni administrador puede borrar o sobreescribir facturas hasta cumplidos los 2.190 días.
 
 ---
 
 ### 2.3. Real Decreto 1007/2023 (Reglamento de Sistemas Informáticos de Facturación - VeriFactu)
 El reglamento técnico establece los estándares para los registros de facturación:
-1. **Inalterabilidad**: Cada registro de facturación emitido debe incorporar un hash criptográfico encadenado al registro inmediatamente anterior.
-2. **Custodia de Registros de Eventos**: El sistema debe registrar cualquier incidencia, reinicio o anomalía.
-3. **Almacenamiento seguro**: Si el ERP no remite inmediatamente las facturas a la sede electrónica de la AEAT (modalidad No-VeriFactu), debe mantener una copia inmutable y accesible para inspección telemática.
-* **IaC Setting**: `allowProtectedAppendWrites = true`. This parameter permits the ERP to append new billing log blocks and invoice hashes sequentially while strictly prohibiting the alteration or deletion of past committed blocks.
+1. **Inalterabilidad y Encadenamiento**: Cada registro de facturación emitido debe incorporar la huella digital (*hash* criptográfico) encadenada al registro inmediatamente anterior.
+2. **Custodia de Registros de Eventos**: El sistema debe registrar cualquier incidencia, reinicio, anomalía o brecha de seguridad en un registro de auditoría protegido.
+3. **Almacenamiento Seguro**: Si el ERP no remite inmediatamente las facturas a la sede electrónica de la AEAT (modalidad No-VeriFactu), debe mantener una copia inmutable, accesible y legible para inspección telemática inmediata.
+* **Parámetro en IaC**: `allowProtectedAppendWrites = true`. Este parámetro autoriza al ERP a añadir secuencialmente nuevos bloques de registros de auditoría y hashes sin permitir en ningún momento modificar o eliminar los bloques consolidados previamente.
 
 ---
 
 ### 2.4. Residencia del Dato y RGPD (Spain Central)
-El almacenamiento de facturas implica el tratamiento de datos personales de personas físicas (autónomos con NIF, administradores, destinatarios de facturas con domicilios particulares).
+El almacenamiento de facturas implica el tratamiento de datos personales de personas físicas (autónomos con NIF, administradores, empleados y clientes particulares con domicilios).
 
-1. **Soberanía Territorial**: Desplegar en `spaincentral` (centros de datos en la Comunidad de Madrid) garantiza que los datos permanecen bajo jurisdicción española y europea, eliminando cualquier debate sobre transferencias internacionales de datos (Capítulo V del RGPD).
-2. **Derecho de Supresión vs. Obligación Legal**: Conforme al artículo 17.3.b del RGPD, el derecho al olvido/supresión no aplica cuando el tratamiento es necesario para el cumplimiento de una obligación legal que requiera el tratamiento de datos impuesta por el Derecho de la Unión o de los Estados miembros (en este caso, Código de Comercio y LGT). El bloqueo WORM de 2.190 días está plenamente justificado frente a peticiones indebidas de borrado.
-3. **Cifrado**:
-   * En tránsito: Enforced TLS 1.2+ (`min_tls_version = "TLS1_2"`).
-   * En reposo: Cifrado transparente con AES-256 (Azure Storage Service Encryption).
+1. **Soberanía Territorial**: Desplegar en la región `spaincentral` (centros de datos en la Comunidad de Madrid) garantiza que los datos permanecen bajo jurisdicción española y comunitaria, eliminando riesgos y complejidades de transferencias internacionales de datos (Capítulo V del RGPD).
+2. **Derecho de Supresión vs. Obligación Legal**: Conforme al artículo 17.3.b del RGPD, el derecho al olvido/supresión no aplica cuando el tratamiento es necesario para el cumplimiento de una obligación legal que requiera el tratamiento de datos impuesta por el Derecho de la Unión o de los Estados miembros (en este caso, Código de Comercio y LGT). El bloqueo WORM de 2.190 días está plenamente respaldado frente a peticiones indebidas de borrado.
+3. **Seguridad y Cifrado**:
+   * En tránsito: Imposición obligatoria de TLS 1.2 o superior (`min_tls_version = "TLS1_2"`).
+   * En reposo: Cifrado transparente con clave AES-256 gestionada por la plataforma (*Storage Service Encryption*).
 
 ---
 
@@ -61,8 +61,8 @@ El almacenamiento de facturas implica el tratamiento de datos personales de pers
 
 Microsoft Azure opera sus centros de datos de la región Spain Central bajo los siguientes esquemas de cumplimiento validados por auditores independientes:
 * **ENS (Esquema Nacional de Seguridad) - Categoría ALTO**: Certificado oficial emitido por BSI / CCN-CERT.
-* **ISO/IEC 27001, 27017, 27018, 27701**: Seguridad de la información y privacidad en la nube.
-* **SOC 1, SOC 2, SOC 3**: Informes de controles en organizaciones de servicios para auditorías financieras.
+* **ISO/IEC 27001, 27017, 27018, 27701**: Seguridad de la información, seguridad en la nube y privacidad de datos personales.
+* **SOC 1, SOC 2, SOC 3**: Informes de controles en organizaciones de servicios para auditorías financieras y operativas.
 
 ---
 

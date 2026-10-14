@@ -1,36 +1,35 @@
-# Auditing, Monitoring & KQL Queries: Azure Storage Compliance
+# Auditoría, Monitorización y Consultas KQL: Cumplimiento Normativo en Azure Storage
 
-In regulated environments subject to the **Spanish Tax Agency (AEAT)**, the **Ley Antifraude (Ley 11/2021)**, **VeriFactu (RD 1007/2023)**, and the **RGPD**, companies must not only guarantee that data is immutable, but also provide an unalterable **audit trail of every access, modification attempt, and administrative event**.
+En entornos regulados sujetos a la **Agencia Estatal de Administración Tributaria (AEAT)**, la **Ley Antifraude (Ley 11/2021)**, el **Reglamento VeriFactu (RD 1007/2023)** y el **RGPD**, las empresas no solo deben asegurar la inmutabilidad física de los datos, sino también garantizar una **pista de auditoría completa, inalterable y auditable de cualquier acceso, intento de modificación o evento administrativo**.
 
 ---
 
-## 1. Diagnostic Settings Architecture
+## 1. Arquitectura de Diagnóstico y Telemetría
 
 ```mermaid
 flowchart LR
-    Blob["Azure Blob Storage\n(facturas & pedidos)"]
-    Diag["Diagnostic Settings\n(StorageRead, StorageWrite, StorageDelete)"]
-    LAW["Azure Log Analytics Workspace\n(Retention: 365+ days)"]
-    Alerts["Azure Monitor Alerts\n(Email / Webhook / SIEM)"]
+    Blob["Azure Blob Storage<br/>(facturas y pedidos)"]
+    Diag["Configuración de Diagnóstico<br/>(StorageRead, StorageWrite, StorageDelete)"]
+    LAW["Log Analytics Workspace<br/>(Retención: 365+ días)"]
+    Alerts["Alertas de Azure Monitor<br/>(Correo / Webhook / SIEM)"]
     Sentinel["Microsoft Sentinel / SOC"]
 
-    Blob -->|Telemetry & Audit Logs| Diag
+    Blob -->|"Telemetría y Auditoría"| Diag
     Diag --> LAW
     LAW --> Alerts
     LAW --> Sentinel
 ```
 
-### Telemetry Categories to Enable
-1. **`StorageRead`**: Logs all reads and downloads (essential for RGPD access auditing).
-2. **`StorageWrite`**: Logs all creations, uploads, and append blocks (VeriFactu proof of insertion).
-3. **`StorageDelete`**: Logs all deletion attempts (captures rejected attempts blocked by WORM).
-4. **`Transaction` Metrics**: Ingestion volume, latency, and request counts.
+### Categorías de Registro a Habilitar
+1. **`StorageRead`**: Registra lecturas y descargas (esencial para auditorías de acceso a datos personales bajo el RGPD).
+2. **`StorageWrite`**: Registra creaciones, cargas y adición de bloques (prueba fehaciente de ingesta continua según VeriFactu).
+3. **`StorageDelete`**: Registra todos los intentos de borrado (captura intentos anómalos o malintencionados bloqueados por la directiva WORM).
+4. **Métricas `Transaction`**: Métricas de rendimiento, latencia de API, volumen transferido y disponibilidad global.
 
 ---
 
-## 2. Enabling Diagnostic Settings via IaC / CLI
+## 2. Habilitación de la Configuración de Diagnóstico mediante Azure CLI
 
-### Azure CLI
 ```bash
 az monitor diagnostic-settings create \
   --name "diag-storage-audit" \
@@ -42,12 +41,12 @@ az monitor diagnostic-settings create \
 
 ---
 
-## 3. Ready-to-Run Kusto (KQL) Queries for Auditors
+## 3. Consultas Kusto (KQL) Listas para Inspecciones Tributarias y Auditorías
 
-Run these queries in **Azure Monitor Log Analytics** on the `StorageBlobLogs` table:
+Ejecute estas consultas en **Azure Monitor Log Analytics** sobre la tabla `StorageBlobLogs`:
 
-### Query 1: Detect Rejected Deletion Attempts (WORM Violations / Tamper Audit)
-Detects any user, application, or script that attempted to delete or overwrite an immutable invoice:
+### Consulta 1: Detección de Intentos Fallidos de Borrado (Violaciones de WORM / Auditoría Antimanipulación)
+Detecta cualquier usuario, aplicación o proceso que haya intentado borrar o sobreescribir una factura inmutable:
 
 ```kusto
 StorageBlobLogs
@@ -69,8 +68,8 @@ StorageBlobLogs
 
 ---
 
-### Query 2: Audit Rehydration Requests from Archive Tier
-Tracks when an auditor or user requests access to an invoice archived 3+ years ago:
+### Consulta 2: Auditoría de Solicitudes de Rehidratación desde el Nivel Archivo (*Archive*)
+Registra cuándo un auditor, perito o usuario solicita el acceso a facturas archivadas de más de 3 años de antigüedad:
 
 ```kusto
 StorageBlobLogs
@@ -90,8 +89,8 @@ StorageBlobLogs
 
 ---
 
-### Query 3: Daily Ingestion Audit for VeriFactu (Proof of Continuous Billing)
-Computes daily invoice upload counts and data volume for tax accounting verification:
+### Consulta 3: Auditoría de Ingesta Diaria para VeriFactu (Prueba de Facturación Continua)
+Calcula el cómputo diario de facturas incorporadas y el volumen transferido para la verificación tributaria:
 
 ```kusto
 StorageBlobLogs
@@ -107,8 +106,8 @@ StorageBlobLogs
 
 ---
 
-### Query 4: RGPD Access Trail on Sensitive Invoice Blobs
-Identifies which IP addresses and identities downloaded customer invoices:
+### Consulta 4: Pista de Auditoría RGPD de Accesos a Facturas Sensibles
+Identifica qué direcciones IP e identidades autenticadas descargaron facturas de clientes:
 
 ```kusto
 StorageBlobLogs

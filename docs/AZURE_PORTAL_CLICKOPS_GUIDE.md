@@ -1,5 +1,4 @@
 # Guía Operativa Paso a Paso en Azure Portal (Operación Manual / ClickOps)
-# Step-by-Step Azure Portal Manual Operations Guide
 
 Esta guía detalla minuciosamente el procedimiento manual (*ClickOps*) paso a paso a través de la interfaz gráfica del **Portal de Azure** ([portal.azure.com](https://portal.azure.com)). Se incluyen los nombres exactos tanto en **Español** como en **Inglés** de cada campo, botón y pestaña, junto con la justificación técnica, legal y financiera de cada decisión.
 

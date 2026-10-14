@@ -1,66 +1,66 @@
-# Architectural Reference: Azure Blob Storage WORM & Cost-Optimized Tiering for Spanish ERP
+# Referencia de Arquitectura: Azure Blob Storage WORM y Ciclo de Vida Optimizado para ERP en España
 
-This document outlines the architectural blueprint for storing and legally archiving ERP invoices and orders (up to 1 TB and scaling) in **Azure Blob Storage** within the **Spain Central (Madrid)** region.
+Este documento describe el anteproyecto de arquitectura para el almacenamiento y archivo legal inmutable de facturas y pedidos de ERP (hasta 1 TB y escalable) en **Azure Blob Storage** en la región **Spain Central (Madrid)**.
 
 > [!NOTE]
-> **AI Architecture Reference & Disclaimer**
+> **Aviso de Referencia Arquitectónica Generada por IA**
 > 
-> This architecture document and corresponding IaC modules were generated with **Gemini 3.8 Flash**.
-> While all code and templates have been validated through CI pipelines (Terraform, Bicep, shell/PowerShell parsers), they **have not yet been deployed or stress-tested in a live production environment**.
+> Este documento de arquitectura y sus módulos de IaC correspondientes han sido generados mediante **Gemini 3.8 Flash**.
+> Aunque todo el código y las plantillas han sido validados mediante pipelines de CI (Terraform, Bicep y analizadores sintácticos), **aún no han sido desplegados ni sometidos a pruebas de estrés en un entorno de producción real**.
 > 
-> **Purpose**: This blueprint serves as an **architectural reference, educational model, and decision framework** for enterprise ERP storage compliance in Spain. Teams must validate all configurations in a sandbox environment before applying permanent WORM policy locks in production.
+> **Propósito**: Actúa como **anteproyecto de arquitectura de referencia, modelo formativo y marco de decisión técnica (FinOps)** para el almacenamiento normativo de ERPs en España. Los equipos deben validar las configuraciones en un entorno de pruebas (*sandbox*) antes de aplicar bloqueos permanentes WORM en producción.
 
 ---
 
-## Executive Summary & Value Proposition
+## Resumen Ejecutivo y Propuesta de Valor
 
-| Dimension | Standard Approach (Hot Tier Only) | Optimized ERP Compliance Architecture | Business Impact |
+| Dimensión | Enfoque Tradicional (Solo Nivel Hot) | Arquitectura Optimizada de Cumplimiento ERP | Impacto Empresarial |
 | :--- | :--- | :--- | :--- |
-| **Monthly Cost (1 TB)** | ~19.00 € / month | **~4.05 € – 5.50 € / month** | **~75% – 80% recurring savings** |
-| **Data Residency** | Often West Europe (Amsterdam) or North Europe (Dublin) | **Spain Central (`spaincentral` - Madrid)** | 100% Spanish territory data sovereignty |
-| **Network Latency** | 25 – 45 ms from Iberian peninsula | **< 10 ms ultra-low latency** | Seamless ERP user experience |
-| **High Availability** | LRS (single data center) | **ZRS (3 independent Availability Zones in Madrid)** | Resilient against entire data center outage |
-| **Legal Compliance** | Mutable storage, vulnerable to tampering | **WORM Immutability Policy (2,190 days / 6 years)** | Compliant with Código de Comercio Art. 30 & VeriFactu |
-| **Ransomware Defense** | Vulnerable to accidental/malicious deletion | **CanNotDelete Resource Lock + 30-day Soft Delete** | Tamper-proof, zero accidental loss |
+| **Coste Mensual (1 TB)** | ~19,00 € / mes | **~4,05 € – 5,50 € / mes** | **~75% – 80% de ahorro recurrente** |
+| **Residencia del Dato** | Frecuentemente Ámsterdam o Dublín | **Spain Central (`spaincentral` - Madrid)** | 100% soberanía del dato en territorio español |
+| **Latencia de Red** | 25 – 45 ms desde la península ibérica | **< 10 ms (latencia ultrabaja)** | Experiencia de usuario ágil en el ERP |
+| **Alta Disponibilidad** | LRS (un único centro de datos) | **ZRS (3 Zonas de Disponibilidad en Madrid)** | Resiliencia ante la caída de un datacenter entero |
+| **Cumplimiento Legal** | Almacenamiento mutable y vulnerable | **Directiva WORM inmutable (2.190 días / 6 años)** | Cumple con Art. 30 Cód. Comercio y VeriFactu |
+| **Protección Antiransomware** | Vulnerable al borrado accidental/malicioso | **Bloqueo CanNotDelete + Soft Delete de 30 días** | Blindaje contra borrados accidentales o ataques |
 
 ---
 
-## Architectural Diagram
+## Diagrama de Arquitectura
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["🏢 Corporate & ERP Ecosystem (Spain)"]
-        ERP["ERP System<br/>(SAP / Navision / Odoo / Custom)"]
-        Portal["Customer / Billing Portal"]
-        Auditor["Tax / Legal Auditors (AEAT)"]
+    subgraph ClientLayer["🏢 Ecosistema ERP y Facturación Corporativa (España)"]
+        ERP["Sistema ERP<br/>(SAP / Navision / Odoo / Desarrollo Propio)"]
+        Portal["Portal de Clientes / Facturación"]
+        Auditor["Auditores Fiscales y Legales (AEAT)"]
     end
 
-    subgraph SpainCentral["🇪🇸 Azure Region: Spain Central (Madrid)"]
-        subgraph RG["Resource Group: rg-erp-storage-spaincentral-prod"]
-            Lock["🔒 Management Lock: CanNotDelete"]
+    subgraph SpainCentral["🇪🇸 Región Azure: Spain Central (Madrid)"]
+        subgraph RG["Grupo de Recursos: rg-erp-storage-spaincentral-prod"]
+            Lock["🔒 Bloqueo de Gestión: CanNotDelete"]
             
-            subgraph SA["Storage Account: General Purpose v2 (StorageV2)<br/>SKU: Standard_ZRS (3 Availability Zones)<br/>TLS 1.2+ | Anonymous Access Blocked | Entra ID RBAC"]
+            subgraph SA["Cuenta de Almacenamiento: General Purpose v2 (StorageV2)<br/>SKU: Standard_ZRS (3 Zonas de Disponibilidad)<br/>TLS 1.2+ | Cero Acceso Público | Entra ID RBAC"]
                 
-                subgraph BlobService["Blob Service Properties"]
-                    SoftDel["🗑️ Soft Delete (30 Days)<br/>Blobs & Containers"]
-                    Version["📑 Blob Versioning<br/>Enabled"]
+                subgraph BlobService["Propiedades del Servicio Blob"]
+                    SoftDel["🗑️ Soft Delete (30 Días)<br/>Blobs y Contenedores"]
+                    Version["📑 Control de Versiones de Blobs<br/>Habilitado"]
                 end
 
-                subgraph Containers["Immutability Policy (WORM)"]
-                    C1["📁 Container: facturas<br/>Time-based retention: 2,190 days<br/>Append Allowed: True"]
-                    C2["📁 Container: pedidos<br/>Time-based retention: 2,190 days<br/>Append Allowed: True"]
+                subgraph Containers["Directiva de Inmutabilidad (WORM)"]
+                    C1["📁 Contenedor: facturas<br/>Retención basada en tiempo: 2.190 días<br/>Anexión permitida: True"]
+                    C2["📁 Contenedor: pedidos<br/>Retención basada en tiempo: 2.190 días<br/>Anexión permitida: True"]
                 end
 
-                subgraph Lifecycle["Automatic Lifecycle Management Policy"]
+                subgraph Lifecycle["Directiva de Administración del Ciclo de Vida"]
                     direction LR
-                    T_Hot["🔥 Hot Tier<br/>0 - 90 Days<br/>Immediate Read<br/>No read fee"]
-                    T_Cool["❄️ Cool Tier<br/>91 - 365 Days<br/>Immediate Read<br/>~50% storage saving"]
-                    T_Cold["🧊 Cold Tier<br/>1 - 3 Years<br/>Immediate Read<br/>~76% storage saving"]
-                    T_Archive["📦 Archive Tier<br/>3 - 6+ Years<br/>Rehydration in hours<br/>~95% storage saving<br/>(0.00099 €/GB/mo)"]
+                    T_Hot["🔥 Nivel Hot<br/>0 - 90 Días<br/>Lectura Inmediata<br/>Sin coste por GB leído"]
+                    T_Cool["❄️ Nivel Cool<br/>91 - 365 Días<br/>Lectura Inmediata<br/>~46% ahorro almacenamiento"]
+                    T_Cold["🧊 Nivel Cold<br/>1 - 3 Años<br/>Lectura Inmediata<br/>~76% ahorro frente a Hot"]
+                    T_Archive["📦 Nivel Archive<br/>3 - 6+ Años<br/>Rehidratación en horas<br/>~95% ahorro (0,00099 €/GB/m)"]
 
-                    T_Hot -->|After 90 days| T_Cool
-                    T_Cool -->|After 365 days| T_Cold
-                    T_Cold -->|After 1,095 days| T_Archive
+                    T_Hot -->|Tras 90 días| T_Cool
+                    T_Cool -->|Tras 365 días| T_Cold
+                    T_Cold -->|Tras 1.095 días| T_Archive
                 end
             end
         end
@@ -68,72 +68,72 @@ flowchart TD
 
     ERP -->|"REST / SDK (TLS 1.2+)"| C1
     ERP -->|"REST / SDK (TLS 1.2+)"| C2
-    Portal -->|"SAS Token / Entra ID"| T_Hot
-    Auditor -->|"Audit Access"| T_Cold
-    Auditor -.->|"Rehydrate on-demand"| T_Archive
+    Portal -->|"Token SAS / Entra ID"| T_Hot
+    Auditor -->|"Consulta Online"| T_Cold
+    Auditor -.->|"Rehidratación bajo demanda"| T_Archive
 ```
 
 ---
 
-## Component Deep Dive
+## Análisis Detallado de Componentes
 
-### 1. Storage Account Baseline
-* **Account Type**: `StorageV2` (General Purpose v2). Required for access tiering (Hot, Cool, Cold, Archive) and WORM container immutability policies.
-* **Redundancy**: `Standard_ZRS` (Zone-Redundant Storage).
-  * Data is synchronously written across three physically separated Azure availability zones within Madrid.
-  * Protects against single facility failures (power, cooling, networking) without requiring inter-region egress costs.
-  * Can be configured as `Standard_LRS` for non-production environments to reduce cost further.
-* **Region**: `spaincentral` (Madrid, Spain).
-  * Guarantees that tax, accounting, and personal data never leave Spanish jurisdiction.
-  * Ideal for compliance with the Spanish General Tax Law (LGT), the Commercial Code, and the Spanish Data Protection Agency (AEPD / RGPD).
+### 1. Base de la Cuenta de Almacenamiento
+* **Tipo de Cuenta**: `StorageV2` (General Purpose v2). Obligatorio para disponer de los 4 niveles de acceso (Hot, Cool, Cold, Archive) y directivas de inmutabilidad WORM a nivel de contenedor.
+* **Redundancia**: `Standard_ZRS` (*Zone-Redundant Storage*).
+  * Los datos se escriben sincrónicamente en tres zonas de disponibilidad físicamente separadas en la Comunidad de Madrid.
+  * Protege contra fallos en instalaciones completas (suministro eléctrico, refrigeración o red) sin incurrir en costes de salida interregional.
+  * Puede parametrizarse a `Standard_LRS` en entornos de no producción para abaratar costes.
+* **Región**: `spaincentral` (Madrid, España).
+  * Garantiza que los datos fiscales, contables y personales jamás abandonen la jurisdicción española.
+  * Idóneo para auditorías de la Agencia Tributaria (AEAT), el Código de Comercio y la Agencia Española de Protección de Datos (AEPD / RGPD).
 
-### 2. Access Tier Lifecycle Automation (Tiering Progression)
+### 2. Progresión del Ciclo de Vida (*Tiering*)
 
-The lifecycle management engine continuously runs server-side evaluations against blob metadata:
+El motor de administración del ciclo de vida evalúa periódicamente las reglas sobre los metadatos de los blobs:
 
 ```text
-Day 0                                    Day 90                Day 365               Day 1095              Day 2190+
+Día 0                                    Día 90                Día 365               Día 1.095             Día 2.190+
   |-----------------------------------------|---------------------|---------------------|----------------------|
                    HOT                               COOL                  COLD                 ARCHIVE
-             Active Invoices                   Quarterly/Annual          Year 2 & 3           Legal Custody
-          Free read / standard cost             ~50% discount         ~76% discount        ~95% discount (0.001€)
+            Facturas Activas                   Cierres Trimestrales      Años 2 y 3            Custodia Legal
+       Lectura libre / coste base             ~46% de descuento     ~76% de descuento     ~95% descuento (0,001€)
 ```
 
-1. **Hot Tier (Days 0 to 90)**:
-   * **Use Case**: Current quarter billing, customer downloads, payment disputes, ongoing accounting reconciliation.
-   * **Characteristics**: Full performance, zero retrieval/read surcharge.
-2. **Cool Tier (Days 91 to 365)**:
-   * **Use Case**: Quarterly VAT settlements (Modelo 303), annual corporate tax closes (Modelo 200/390).
-   * **Characteristics**: Online sub-millisecond retrieval, ~50% reduction in storage price per GB.
-3. **Cold Tier (Days 366 to 1,095 / Years 1 to 3)**:
-   * **Use Case**: Financial audits, retroactive invoice queries, warranty verifications.
-   * **Characteristics**: Online immediate access with ~76% storage cost reduction.
-4. **Archive Tier (Days 1,096 to 2,190+ / Years 3 to 6+)**:
-   * **Use Case**: Strict statutory custody under Código de Comercio (Art. 30).
-   * **Characteristics**: Lowest possible cost (~0.00099 €/GB/month). Offline storage requiring rehydration (3 to 15 hours, or High Priority in under 1 hour) before reading.
+1. **Nivel Hot (Días 0 a 90)**:
+   * **Caso de uso**: Facturación del trimestre en curso, descargas de clientes en portales, reclamaciones de cobro y conciliación contable diaria.
+   * **Características**: Rendimiento máximo, cero suplementos por lectura o recuperación de datos.
+2. **Nivel Cool (Días 91 a 365)**:
+   * **Caso de uso**: Liquidaciones trimestrales de IVA (Modelo 303), cierres anuales del Impuesto de Sociedades (Modelo 200) y resúmenes anuales (Modelo 390).
+   * **Características**: Acceso online en milisegundos, reducción de aproximadamente el 46% en el precio de almacenamiento por GB.
+3. **Nivel Cold (Días 366 a 1.095 / Años 1 a 3)**:
+   * **Caso de uso**: Inspecciones tributarias habituales, consultas de ejercicios anteriores y comprobaciones de garantías.
+   * **Características**: Acceso online inmediato con un ahorro de ~76% respecto al nivel Hot.
+4. **Nivel Archive (Días 1.096 a 2.190+ / Años 3 a 6+)**:
+   * **Caso de uso**: Custodia legal estricta conforme al Art. 30 del Código de Comercio.
+   * **Características**: Coste marginal mínimo (~0,00099 €/GB/mes). Almacenamiento offline que requiere rehidratación (Estándar: 3 a 15 horas; Alta prioridad: < 1 hora) previa a la lectura.
 
-### 3. WORM Immutability Policy (Compliance & Anti-Fraud)
+### 3. Directiva de Inmutabilidad WORM (Cumplimiento y Antifraude)
 
-* **Mechanism**: Time-based retention policy (`LegalHold` or `TimeBasedRetention`).
-* **Duration**: **2,190 days** (6 complete calendar years).
-* **Scope**: Container level (`facturas` and `pedidos`).
-* **Append Support**: `allowProtectedAppendWrites = true`.
-  * Allows appending new blocks or audit records to existing append blobs without altering historical contents.
-* **States**:
-  * **Unlocked (Test / Grace State)**: The policy is active and protects blobs, but administrators can delete or shorten the policy if needed during deployment verification.
-  * **Locked (Production State)**: Once locked via the specific confirmation script or pipeline step, the policy **CANNOT BE DELETED OR SHORTENED**, even by Azure Subscription Owners, Global Admins, or Microsoft Support engineering.
+* **Mecanismo**: Directiva de retención basada en tiempo (*Time-based retention policy*).
+* **Duración**: **2.190 días** (6 años naturales completos).
+* **Ámbito**: Nivel de contenedor (`facturas` y `pedidos`).
+* **Soporte de Anexión**: `allowProtectedAppendWrites = true`.
+  * Permite añadir nuevos bloques o trazas de auditoría encadenadas a blobs de tipo append sin permitir la alteración ni el truncado de los bloques históricos ya confirmados (requisito VeriFactu).
+* **Estados Operativos**:
+  * **Desbloqueado / Unlocked (Fase de Pruebas)**: La directiva está activa y protege los blobs, pero el administrador puede eliminarla o acortarla si detecta errores durante las pruebas iniciales.
+  * **Bloqueado / Locked (Modo Legal Permanente)**: Una vez ejecutada la acción de bloqueo confirmada, la directiva **NO PUEDE SER ELIMINADA NI ACORTADA**, ni por los Propietarios de la suscripción, ni por Administradores Globales, ni por el soporte técnico de Microsoft Azure.
 
-### 4. Zero-Trust Security & Ransomware Defense
+### 4. Seguridad Zero Trust y Defensa Antiransomware
 
-1. **Identity & Access Management (IAM)**:
-   * Enforce **Microsoft Entra ID RBAC** (`Storage Blob Data Contributor` / `Storage Blob Data Reader`).
-   * Option to disable Shared Access Keys (`shared_access_key_enabled = false`) to eradicate static secret exposure.
-2. **Network Security**:
-   * Default public access blocked (`allow_blob_public_access = false`).
-   * Storage Firewall with allowed IP ranges or Virtual Network Service Endpoints / Private Endpoints.
-   * Enforce TLS 1.2 minimum (`min_tls_version = "TLS1_2"`).
-   * Enforce HTTPS only (`enable_https_traffic_only = true`).
-3. **Data Loss & Ransomware Protection**:
-   * **Soft Delete**: Configured for 30 days on both blobs and containers. Accidental deletions remain recoverable.
-   * **Blob Versioning**: Preserves previous versions of blobs automatically.
-   * **Azure Resource Lock**: `CanNotDelete` lock applied at the storage account level prevents accidental deletion of the entire account by automated tools or compromised administrator credentials.
+1. **Gestión de Identidades y Accesos (IAM)**:
+   * Acceso forzado mediante **Microsoft Entra ID RBAC** (`Storage Blob Data Contributor` / `Storage Blob Data Reader`).
+   * Posibilidad de deshabilitar el acceso mediante claves compartidas estáticas (`shared_access_key_enabled = false`) para mitigar la fuga de credenciales.
+2. **Seguridad de Red**:
+   * Acceso público anónimo bloqueado (`allow_blob_public_access = false`).
+   * Cortafuegos de almacenamiento con listas blancas de IPs públicas de los servidores del ERP o endpoints privados (*Private Endpoints*).
+   * Cifrado en tránsito exigido con TLS 1.2 como mínimo (`min_tls_version = "TLS1_2"`).
+   * Obligatoriedad estricta de tráfico HTTPS (`https_traffic_only_enabled = true`).
+3. **Protección contra Pérdida de Datos**:
+   * **Soft Delete**: Configurado a 30 días tanto para blobs como para contenedores, permitiendo revertir borrados accidentales.
+   * **Control de Versiones de Blobs**: Mantiene automáticamente el historial inalterable de versiones.
+   * **Bloqueo de Gestión de Azure**: Bloqueo `CanNotDelete` aplicado a nivel de cuenta para evitar que herramientas automatizadas o cuentas comprometidas eliminen la cuenta de almacenamiento.

@@ -1,66 +1,67 @@
-# ERP Integration & Archive Rehydration Guide
+# Guía de Integración ERP y Rehidratación desde el Nivel Archivo
 
-This guide details how enterprise ERP systems (SAP, Microsoft Dynamics, Navision, Odoo, or custom microservices) interact with the compliant WORM storage account and manage **rehydration** of archived historical documents.
-
----
-
-## 1. Authentication: Zero Trust & Microsoft Entra ID
-
-Do **not** hardcode storage account keys in ERP application code or configuration files. Instead, use **Microsoft Entra ID RBAC**:
-
-* **For Azure VMs / AKS / App Services**: Assign a **User-Assigned Managed Identity**.
-* **For On-Premises ERPs**: Use a **Microsoft Entra ID App Registration** (Service Principal) with certificate authentication or OpenID Connect (OIDC) federation.
-* **Assigned RBAC Role**: `Storage Blob Data Contributor` (allows uploads and append blocks; cannot bypass WORM immutability policies).
+Esta guía detalla cómo los sistemas ERP empresariales (SAP, Microsoft Dynamics 365, Navision, Odoo o microservicios a medida) interactúan con la cuenta de almacenamiento inmutable WORM y gestionan la **rehidratación** de facturas históricas archivadas.
 
 ---
 
-## 2. Recommended Metadata & Blob Index Tags
+## 1. Autenticación: Modelo Zero Trust y Microsoft Entra ID (RBAC)
 
-When uploading an invoice, attach both **Metadata** and **Blob Index Tags**. Blob Index Tags allow query-based indexing without scanning millions of files:
+**Nunca** incruste ni almacene claves fijas de cuenta de almacenamiento (*Storage Account Keys*) en el código fuente ni en ficheros de configuración del ERP. En su lugar, utilice el control de acceso basado en roles **Microsoft Entra ID RBAC**:
 
-| Tag Key | Example Value | Description |
+* **Para aplicaciones en Azure (VMs, AKS, Azure App Service)**: Asigne una **Identidad Administrada Asignada por el Usuario (*User-Assigned Managed Identity*)**.
+* **Para ERPs locales (*On-Premises*) o multi-cloud**: Utilice un **Registro de Aplicación en Microsoft Entra ID (*Service Principal*)** autenticado mediante certificado X.509 o federación OpenID Connect (OIDC).
+* **Rol RBAC Mínimo Requerido**: `Colaborador de datos de Storage Blob (Storage Blob Data Contributor)`. Este rol autoriza la subida de blobs y la anexión de bloques, pero no puede eludir ni anular las directivas de inmutabilidad WORM.
+
+---
+
+## 2. Metadatos Recomendados y Etiquetas de Índice (*Blob Index Tags*)
+
+Al subir cada factura, adjunte tanto **Metadatos** como **Etiquetas de Índice (*Blob Index Tags*)**. Las etiquetas de índice permiten realizar búsquedas parametrizadas por atributos sin necesidad de escanear millones de archivos:
+
+| Clave de Etiqueta (*Tag*) | Valor de Ejemplo | Descripción |
 | :--- | :--- | :--- |
-| `InvoiceNumber` | `FAC-2026-004812` | Official fiscal invoice sequence number. |
-| `FiscalYear` | `2026` | Fiscal accounting year. |
-| `CustomerTaxID` | `B12345678` | NIF/CIF of the recipient entity. |
-| `VeriFactuChainHash`| `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | SHA-256 hash chaining to the preceding invoice. |
-| `DocumentType` | `FacturaExpedida` | Invoice category under Spanish billing regulations. |
+| `InvoiceNumber` | `FAC-2026-004812` | Número de serie y correlación fiscal oficial de la factura. |
+| `FiscalYear` | `2026` | Ejercicio fiscal y contable correspondiente. |
+| `CustomerTaxID` | `B12345678` | NIF/CIF de la entidad receptora de la factura. |
+| `VeriFactuChainHash`| `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | Huella digital SHA-256 encadenada al registro anterior. |
+| `DocumentType` | `FacturaExpedida` | Tipología documental según el reglamento de facturación español. |
 
 ---
 
-## 3. Rehydration from Archive Tier (Audits & Historical Queries)
+## 3. Rehidratación desde el Nivel Archivo (*Archive Tier*)
 
-Blobs older than 3 years (1,095 days) reside in the **Archive Tier** (~0.00099 €/GB/month). They are offline and must be rehydrated before they can be read.
+Las facturas con más de 3 años de antigüedad (1.095 días) residen en el **Nivel Archivo (*Archive Tier*)** (~0,00099 €/GB/mes). Se encuentran desconectadas (*offline*) y requieren un proceso de rehidratación previo para poder descargarse y visualizarse.
 
-### Rehydration Latency & Priority Options
+### Opciones de Prioridad y Latencia de Rehidratación
 
-| Priority Level | Latency in Spain Central | Cost per GB Retrieved | Recommended For |
+| Nivel de Prioridad | Latencia en Spain Central | Coste por GB Recuperado | Recomendado Para |
 | :--- | :--- | :--- | :--- |
-| **Standard Priority** | **3 to 15 hours** | ~0.022 € / GB | Regular audit requests, annual tax reviews. |
-| **High Priority** | **< 1 hour** (blobs < 10 GB) | ~0.110 € / GB | Urgent legal requirements, immediate tax inspections. |
+| **Prioridad Estándar (*Standard*)** | **3 a 15 horas** | ~0,022 € / GB | Peticiones ordinarias de auditoría o revisiones contables anuales. |
+| **Alta Prioridad (*High Priority*)** | **< 1 hora** (para blobs < 10 GB) | ~0,110 € / GB | Requerimientos judiciales urgentes o inspecciones tributarias presenciales. |
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Auditor as Tax Auditor (AEAT)
-    participant ERP as ERP System / App
+    actor Auditor as Inspector / Auditor Fiscal (AEAT)
+    participant ERP as Sistema ERP / API Facturación
     participant Storage as Azure Blob Storage (Spain Central)
 
-    Auditor->>ERP: Request Invoice from 4 years ago (FAC-2022-1042)
-    ERP->>Storage: Check Blob Tier
-    Storage-->>ERP: Status: Archive Tier (Offline)
-    ERP->>Storage: SetBlobTier(target="Cool", priority="Standard")
-    Storage-->>ERP: HTTP 202 Accepted (Rehydration in progress)
-    Note over Storage: Background Rehydration (3 - 15 hours)
-    Storage-->>Storage: Blob restored to Cool Tier
-    ERP->>Storage: Download Blob (GetBlob)
-    Storage-->>ERP: Invoice PDF Stream (HTTP 200)
-    ERP->>Auditor: Provide Decrypted Original Invoice
+    Auditor->>ERP: Solicita factura de hace 4 años (FAC-2022-1042)
+    ERP->>Storage: Consulta estado del blob (GetBlobProperties)
+    Storage-->>ERP: Estado: Nivel Archive / Archivo (Desconectado)
+    ERP->>Storage: SetBlobTier(destino="Cool", prioridad="Standard")
+    Storage-->>ERP: HTTP 202 Aceptado (Rehidratación en segundo plano)
+    Note over Storage: Proceso de Rehidratación (3 - 15 horas)
+    Storage-->>Storage: Factura restaurada al nivel Cool
+    ERP->>Storage: Descarga del documento (GetBlob)
+    Storage-->>ERP: Flujo binario del PDF original (HTTP 200)
+    ERP->>Auditor: Entrega de la factura original auténtica
 ```
 
-### Rehydration via Azure CLI
+### Rehidratación Mediante Azure CLI
+
 ```bash
-# Rehydrate a single historical invoice to Cool tier
+# Rehidratar una factura histórica al nivel Esporádico (Cool)
 az storage blob set-tier \
   --account-name sterpspainprod01 \
   --container-name facturas \
