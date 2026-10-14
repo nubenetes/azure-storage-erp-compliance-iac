@@ -123,7 +123,8 @@ flowchart TD
 
 * Coste tradicional manteniendo todo en Hot: **~18,80 € / mes (LRS)** o **~23,40 € / mes (ZRS)**.
 * **Ahorro acumulado a 6 años**: **~1.038,96 € ahorrados por cada TB** (> 75% de ahorro neto).
-* Modelado financiero exhaustivo disponible en [`docs/COST_OPTIMIZATION.md`](docs/COST_OPTIMIZATION.md).
+* **Coste de Rehidratación ante Inspección / Auditoría**: Tan solo **~3,33 € por cada lote de 100 GB** (~20.000 facturas) en prioridad estándar (3-15h) o **~5,77 € por 50 GB** en alta prioridad (<1h), preservando un ahorro neto de decenas de euros por lote.
+* Modelado financiero exhaustivo y 4 ejemplos numéricos disponibles en [`docs/COST_OPTIMIZATION.md`](docs/COST_OPTIMIZATION.md#5-análisis-detallado-de-costes-de-rehidratación-y-ejemplos-prácticos).
 
 ---
 
@@ -138,19 +139,24 @@ flowchart TD
 | **RGPD / LOPDGDD** | Soberanía del dato y protección de datos personales de autónomos y clientes. | Datos alojados estrictamente en **Spain Central (Madrid)**; TLS 1.2+; autenticación Entra ID RBAC. |
 | **Esquema Nacional de Seguridad (ENS)**| Certificación nivel **ALTO** para entidades reguladas y sector público. | Microsoft Azure Spain Central dispone de la certificación oficial **ENS Nivel Alto**. |
 
-* Análisis jurídico detallado disponible en [`docs/LEGAL_COMPLIANCE_SPAIN.md`](docs/LEGAL_COMPLIANCE_SPAIN.md).
+> [!CAUTION]
+> **Régimen Sancionador y Riesgo Económico si no hay WORM**:
+> La tenencia de sistemas de almacenamiento o facturación que permitan alterar, manipular o eliminar facturas sin bloqueo inmutable conlleva una **multa fija de 50.000 € por ejercicio económico** (Art. 201 bis LGT - Ley Antifraude / VeriFactu), acumulando **hasta 200.000 €** en una inspección estándar de 4 ejercicios fiscales.
+> Asimismo, acarrea sanciones del **2% al 5% de la facturación** por falta de custodia (Art. 201 LGT), la **expulsión de deducciones de IVA e Impuesto sobre Sociedades** (con sanciones del 50% al 150% de la cuota) y la **calificación de Concurso Culpable** con responsabilidad patrimonial personal e ilimitada para los administradores societarios (Arts. 443-444 Ley Concursal).
+> 
+> Consulte el análisis sancionador detallado en [`docs/LEGAL_COMPLIANCE_SPAIN.md`](docs/LEGAL_COMPLIANCE_SPAIN.md#3-régimen-sancionador-costes-y-penalizaciones-económicas-por-incumplimiento-worm).
 
 ---
 
 ## 📚 Suite de Documentación Técnica Especializada (`docs/`)
 
-Para profundizar en cada vertiente del proyecto (arquitectura, marco legal, finanzas FinOps, seguridad WORM, portal ClickOps, telemetría KQL e integración ERP), navegue a través de la suite de guías técnicas enlazadas:
+Para profundizar en cada vertiente del proyecto (arquitectura, marco legal y sanciones, finanzas FinOps y rehidratación, seguridad WORM, portal ClickOps, telemetría KQL e integración ERP), navegue a través de la suite de guías técnicas enlazadas:
 
 | Documento | Ámbito y Temática Principal | Navegación Directa |
-| :--- | :--- | :---: |
+| :--- | :--- | :--- |
 | 🏛️ **Arquitectura Técnica** | Diagramas de componentes, topología en `spaincentral`, resiliencia ZRS de 3 zonas y reglas de ciclo de vida. | [Consultar Guía →](docs/ARCHITECTURE.md) |
-| ⚖️ **Marco Legal y Cumplimiento** | Fundamentos normativos: Código de Comercio (Art. 30), LGT (Arts. 66 y 66 bis), Ley Antifraude 11/2021, VeriFactu y RGPD. | [Consultar Guía →](docs/LEGAL_COMPLIANCE_SPAIN.md) |
-| 💰 **Optimización de Costes (TCO)** | Justificación matemática y financiera del ahorro del ~71% – 76% (Hot $\rightarrow$ Cool $\rightarrow$ Cold $\rightarrow$ Archive). | [Consultar Guía →](docs/COST_OPTIMIZATION.md) |
+| ⚖️ **Marco Legal y Régimen Sancionador** | Fundamentos normativos: Código de Comercio (Art. 30), LGT, Ley Antifraude 11/2021, VeriFactu y **multas de hasta 200.000 € si no hay WORM**. | [Consultar Guía →](docs/LEGAL_COMPLIANCE_SPAIN.md) |
+| 💰 **Optimización de Costes y Rehidratación** | Justificación del ahorro (~71-76%) y **análisis exhaustivo con 4 ejemplos numéricos de costes de rehidratación desde Archive**. | [Consultar Guía →](docs/COST_OPTIMIZATION.md) |
 | 🔒 **Guía Operativa del Bloqueo WORM** | Mecánica de inmutabilidad irreversible, estados *Unlocked* vs *Locked*, lista de control previa y comandos de bloqueo. | [Consultar Guía →](docs/WORM_POLICY_LOCK_GUIDE.md) |
 | 🖱️ **Manual en Azure Portal (ClickOps)** | Manual paso a paso en 8 fases a través de la interfaz web gráfica del Portal de Azure con nombres en español e inglés. | [Consultar Guía →](docs/AZURE_PORTAL_CLICKOPS_GUIDE.md) |
 | 📊 **Auditoría, Monitorización y KQL** | Configuración de diagnósticos a Log Analytics Workspace y 4 consultas KQL para inspecciones tributarias y RGPD. | [Consultar Guía →](docs/AUDITING_AND_MONITORING.md) |

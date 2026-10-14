@@ -89,6 +89,12 @@ az storage blob set-tier \
   --auth-mode login
 ```
 
+> [!TIP]
+> **Costes de Rehidratación y Ejemplos Numéricos**:
+> Para consultar el desglose matemático detallado de los costes de rehidratación (prioridad Estándar vs. Alta Prioridad, transacciones API y penalización de retiro anticipado), consulte [COST_OPTIMIZATION.md#5-análisis-detallado-de-costes-de-rehidratación-y-ejemplos-prácticos](COST_OPTIMIZATION.md#5-análisis-detallado-de-costes-de-rehidratación-y-ejemplos-prácticos).
+> 
+> Para conocer el impacto y sanciones económicas aplicables por la Agencia Tributaria en caso de no poder exhibir facturas auténticas e inalterables ante un requerimiento de inspección, consulte [LEGAL_COMPLIANCE_SPAIN.md#3-régimen-sancionador-costes-y-penalizaciones-económicas-por-incumplimiento-worm](LEGAL_COMPLIANCE_SPAIN.md#3-régimen-sancionador-costes-y-penalizaciones-económicas-por-incumplimiento-worm).
+
 ---
 
 ## 🧭 Navegación entre Módulos

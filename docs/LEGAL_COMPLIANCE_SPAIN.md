@@ -19,9 +19,17 @@ Este documento detalla los fundamentos jurídicos españoles y europeos que regu
    * 2.2. [Ley 11/2021 de Prevención del Fraude Fiscal](#22-ley-112021-medidas-de-prevención-y-lucha-contra-el-fraude-fiscal)
    * 2.3. [Real Decreto 1007/2023 (Reglamento VeriFactu)](#23-real-decreto-10072023-reglamento-de-sistemas-informáticos-de-facturación---verifactu)
    * 2.4. [Residencia del Dato y RGPD en Spain Central](#24-residencia-del-dato-y-rgpd-spain-central)
-3. [Certificaciones de Azure Spain Central](#3-certificaciones-de-azure-spain-central)
-4. [Referencias Oficiales y Publicaciones en Boletines Oficiales](#4-referencias-oficiales-y-publicaciones-en-boletines-oficiales)
-5. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
+3. [Régimen Sancionador: Costes y Penalizaciones Económicas por Incumplimiento WORM](#3-régimen-sancionador-costes-y-penalizaciones-económicas-por-incumplimiento-worm)
+   * 3.1. [Sanción Fija de 50.000 € por Ejercicio (Art. 201 bis LGT)](#31-sanción-fija-de-50000--por-ejercicio-por-software-no-conforme-art-201-bis-lgt)
+   * 3.2. [Sanción Proporcional del 2% al 5% por Falta de Conservación (Art. 201 LGT)](#32-sanción-proporcional-del-2-al-5-por-falta-de-conservación-o-facturas-ilegibles-art-201-lgt)
+   * 3.3. [Pérdida de Deducibilidad del IVA y del Impuesto sobre Sociedades](#33-pérdida-de-deducibilidad-del-iva-soportado-y-del-gasto-en-impuesto-sobre-sociedades)
+   * 3.4. [Impacto en Auditoría de Cuentas (LAC) y Bloqueo Societario](#34-impacto-en-la-auditoría-de-cuentas-anuales-ley-222015-lac-y-bloqueo-societario)
+   * 3.5. [Calificación de Concurso Culpable y Responsabilidad de Administradores](#35-calificación-de-concurso-culpable-y-responsabilidad-patrimonial-de-los-administradores)
+   * 3.6. [Infracciones de Protección de Datos (RGPD / AEPD)](#36-infracciones-de-protección-de-datos-rgpd--aepd)
+   * 3.7. [Matriz Resumen: Protección WORM vs. Riesgo de Sanción](#37-matriz-resumen-coste-de-protección-worm-vs-riesgo-de-sanción)
+4. [Certificaciones de Azure Spain Central](#4-certificaciones-de-azure-spain-central)
+5. [Referencias Oficiales y Publicaciones en Boletines Oficiales](#5-referencias-oficiales-y-publicaciones-en-boletines-oficiales)
+6. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -78,7 +86,85 @@ El almacenamiento de facturas implica el tratamiento de datos personales de pers
 
 ---
 
-## 3. Certificaciones de Azure Spain Central
+## 3. Régimen Sancionador: Costes y Penalizaciones Económicas por Incumplimiento WORM
+
+Cuando una empresa es objeto de una inspección tributaria de la **Agencia Estatal de Administración Tributaria (AEAT)**, una auditoría financiera externa regulada por la **Ley de Auditoría de Cuentas (LAC)** o un procedimiento judicial mercantil, la ausencia de un mecanismo técnico de inmutabilidad como **WORM (*Write Once, Read Many*) con bloqueo irreversible** acarrea graves consecuencias pecuniarias, operativas y patrimoniales.
+
+A continuación se desglosan las sanciones económicas tipificadas en el marco jurídico español vigente:
+
+### 3.1. Sanción Fija de 50.000 € por Ejercicio por Software No Conforme (Art. 201 bis LGT)
+La **Ley 11/2021 de Medidas contra el Fraude Fiscal** tipificó en el artículo 201 bis de la Ley General Tributaria como **infracción tributaria grave**:
+> *«Constituye infracción tributaria la tenencia de sistemas o programas informáticos o electrónicos que no se ajusten a lo establecido en el artículo 29.2.j) de esta Ley, cuando los mismos no estén debidamente certificados teniendo que estarlo por disposición reglamentaria, o cuando se hayan alterado o modificado los dispositivos certificados.»*
+
+* **Cuantía de la Multa**: **50.000 € fijos por cada ejercicio económico** en el que se haya utilizado el sistema de facturación o almacenamiento no conforme para el usuario o empresa titular.
+* **Efecto Acumulativo en Inspección**: Dado que la AEAT inspecciona con carácter habitual los **4 ejercicios fiscales no prescritos** (por ejemplo, 2023, 2024, 2025 y 2026), la sanción directa asciende a:
+  $$\text{Sanción Art. 201 bis LGT} = 50.000\text{ €} \times 4\text{ ejercicios} = \mathbf{200.000\text{ €}}$$
+* **Responsabilidad del Fabricante / Proveedor de Software**: La comercialización o distribución de software o sistemas de facturación que permitan alterar, interpolar o eliminar facturas sin bloqueo inmutable conlleva una sanción de **150.000 € por cada ejercicio de venta** o el 20% del volumen de negocio.
+
+---
+
+### 3.2. Sanción Proporcional del 2% al 5% por Falta de Conservación o Facturas Ilegibles (Art. 201 LGT)
+El artículo 201 de la LGT sanciona el incumplimiento de las obligaciones de facturación y conservación documental:
+* **Falta de conservación de facturas o justificantes**: Sanción pecuniaria proporcional del **2% al 5% del importe total de las operaciones** respecto de las cuales se haya producido el incumplimiento.
+* **Cuantía no determinada**: Si no resulta posible determinar el importe exacto de las facturas alteradas o destruidas por carecer de inmutabilidad WORM, la sanción es de **300 € por cada factura o documento afectado**.
+* **Ejemplo Práctico**: Para una empresa con una facturación media de 10.000.000 € anuales, si tras un borrado o alteración en una cuenta de almacenamiento estándar mutable no puede acreditar la custodia íntegra de un ejercicio, la sanción del 2% al 5% oscila entre **200.000 € y 500.000 €**.
+
+---
+
+### 3.3. Pérdida de Deducibilidad del IVA Soportado y del Gasto en Impuesto sobre Sociedades
+Conforme al artículo 97 de la Ley 37/1992 del IVA y el artículo 106 de la LGT, la deducción del IVA soportado y la justificación de gastos deducibles en el Impuesto sobre Sociedades (IS) exige **la posesión del documento original justificativo completo, auténtico e inalterado**.
+
+Si el auditor o inspector de la AEAT detecta que los registros y ficheros PDF/XML carecen de garantía técnica de inmutabilidad (o se constata que pudieron ser sobrescritos por usuarios con privilegios en el ERP o en Azure):
+1. **Expulsión de Deducciones (Liquidación de Cuota)**: Se desestiman todas las cuotas soportadas de IVA y las partidas de gasto asociadas a los justificantes no fehacientes.
+2. **Intereses de Demora Tributarios**: Exigencia del interés legal de demora (~4,06% anual) acumulado durante los años de inspección.
+3. **Sanción Tributaria por Dejar de Ingresar Cuota (Art. 191 LGT)**:
+   * Sanción tipificada como **grave o muy grave** por empleo de anomalías sustanciales en contabilidad o facturación.
+   * Multa pecuniaria proporcional de entre el **50% y el 150% de la cuota no ingresada**.
+* **Impacto Económico**: Para 100.000 € de IVA o gasto rechazado, la cuota devuelta más la sanción del 100% y los intereses sitúa el coste económico en más de **220.000 €**.
+
+---
+
+### 3.4. Impacto en la Auditoría de Cuentas Anuales (Ley 22/2015, LAC) y Bloqueo Societario
+Cuando los auditores de cuentas independientes (inscritos en el ROAC) auditan las cuentas anuales de la sociedad, evalúan el Control Interno de los Sistemas de Información (ITGC - *Information Technology General Controls*). Si el almacenamiento de facturas permite la eliminación o alteración física de ficheros:
+1. **Opinión con Salvedades o Denegación de Opinión por Limitación al Alcance**: El auditor certifica la imposibilidad de obtener evidencia de auditoría suficiente y adecuada respecto a la integridad del corte de ventas y compras (*Cut-Off*).
+2. **Rechazo del Depósito de Cuentas en el Registro Mercantil**: El Registrador Mercantil no admite el depósito de cuentas anuales con informe denegatorio o con salvedades sustanciales.
+3. **Cierre de la Hoja Registral Mercantil (Art. 378 RRM)**: Pasado un año desde el cierre del ejercicio sin cuentas depositadas, se decreta el cierre registral. La sociedad queda imposibilitada para inscribir nombramientos de administradores, otorgamiento de poderes notariales o modificaciones estatutarias.
+4. **Vencimiento Anticipado de Créditos Bancarios (*Covenants*)**: Las entidades financieras exigen estados financieros auditados limpios. La opinión modificada activa cláusulas de resolución inmediata de líneas de crédito y pólizas de circulante.
+5. **Prohibición de Contratar con el Sector Público (Art. 71 LCSP)**: Exclusión automática en concursos y licitaciones públicas de la Administración por infracción tributaria firme o falta de solvencia acreditada.
+
+---
+
+### 3.5. Calificación de Concurso Culpable y Responsabilidad Patrimonial de los Administradores
+En caso de que la mercantil atraviese dificultades de liquidez y entre en procedimiento concursal (Ley Concursal, Real Decreto Legislativo 1/2020):
+* **Artículos 443 y 444 TRLC**: El concurso se califica forzosamente como **CULPABLE** cuando el deudor:
+  - Hubiera cometido irregularidad relevante para la comprensión de su situación patrimonial o financiera en la llevanza de la contabilidad.
+  - Hubiera destruido o alterado libros, justificantes o documentación contable antes del vencimiento del plazo legal de 6 años (Art. 30 Código de Comercio).
+* **Derivación de Responsabilidad Personal (Déficit Concursal)**: El juez del concurso condena a los administradores societarios a **cubrir el déficit patrimonial de la sociedad con sus propios bienes y patrimonio personal**, de manera ilimitada y solidaria, junto con la inhabilitación mercantil de 2 a 15 años.
+
+---
+
+### 3.6. Infracciones de Protección de Datos (RGPD / AEPD)
+Las facturas de autónomos, clientes particulares y profesionales contienen datos de carácter personal (NIF, nombre, domicilio fiscal, compras realizadas, cuentas IBAN).
+* La alteración o pérdida de integridad documental vulnera el principio de **integridad y confidencialidad** (Art. 5.1.f RGPD) y el deber de implantar medidas técnicas de seguridad adecuadas (Art. 32 RGPD).
+* **Sanciones de la AEPD**: Multas de hasta **20.000.000 € o el 4% del volumen de negocio total anual global** del ejercicio financiero anterior, optándose por la de mayor cuantía.
+
+---
+
+### 3.7. Matriz Resumen: Coste de Protección WORM vs. Riesgo de Sanción
+
+| Concepto | Con Esta Arquitectura IaC (WORM Locked) | Sin WORM (Almacenamiento Estándar Mutable) |
+| :--- | :--- | :--- |
+| **Inmutabilidad y No Manipulación** | **Criptográficamente garantizada por el hypervisor de Azure** | Inexistente (modificable por admins, ransomware o bugs) |
+| **Coste de Almacenamiento (1 TB / 6 años)** | **~390,96 € totales** (~5,43 €/mes en ZRS) | ~1.680 € (Hot estándar) |
+| **Multa Art. 201 bis LGT (AEAT)** | **0 €** (Sistema cumple directivas de inalterabilidad) | **Hasta 200.000 €** (50.000 € / ejercicio × 4 años) |
+| **Sanción por Falta de Custodia (Art. 201 LGT)**| **0 €** (Retención garantizada de 2.190 días) | **2% al 5% de la facturación inspeccionada** |
+| **Riesgo de Pérdida de Deducciones de IVA/IS** | **0 €** (Evidencia original certificada) | **Cuota íntegra deducida + Intereses + Sanción 50-150%** |
+| **Impacto en Auditoría Financiera** | **Opinión Limpia** sobre integridad de almacenamiento | **Salvedades / Denegación de Opinión** |
+| **Responsabilidad Personal Administradores** | **Blindaje legal** frente a acusaciones de dolo/negligencia | **Riesgo de concurso culpable y embargo patrimonial** |
+
+---
+
+## 4. Certificaciones de Azure Spain Central
 
 Microsoft Azure opera sus centros de datos de la región Spain Central bajo los siguientes esquemas de cumplimiento validados por auditores independientes:
 * **ENS (Esquema Nacional de Seguridad) - Categoría ALTO**: Certificado oficial emitido por BSI / CCN-CERT.
@@ -87,7 +173,7 @@ Microsoft Azure opera sus centros de datos de la región Spain Central bajo los 
 
 ---
 
-## 4. Referencias Oficiales y Publicaciones en Boletines Oficiales
+## 5. Referencias Oficiales y Publicaciones en Boletines Oficiales
 
 1. **Código de Comercio de España**: [Real Decreto de 22 de agosto de 1885 (BOE-A-1885-6627)](https://www.boe.es/buscar/act.php?id=BOE-A-1885-6627#a30).
 2. **Ley 58/2003, General Tributaria (LGT)**: [Texto consolidado (BOE-A-2003-23186)](https://www.boe.es/buscar/act.php?id=BOE-A-2003-23186).

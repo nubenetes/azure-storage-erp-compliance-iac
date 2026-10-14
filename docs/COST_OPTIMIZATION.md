@@ -21,7 +21,13 @@ Este documento proporciona la justificación financiera, matemática y operativa
    * 3.1. [Escenario A: Enfoque Tradicional (100% Nivel Frecuente / Hot)](#escenario-a-enfoque-tradicional-100-nivel-frecuente--hot)
    * 3.2. [Escenario B: Ciclo de Vida Automatizado con 4 Niveles](#escenario-b-ciclo-de-vida-automatizado-con-4-niveles-esta-arquitectura)
 4. [Resumen de Ahorro Financiero](#4-resumen-de-ahorro-financiero)
-5. [Consideraciones Operativas, Recuperación y Rehidratación de Datos](#5-consideraciones-operativas-recuperación-y-rehidratación-de-datos)
+5. [Análisis Detallado de Costes de Rehidratación y Ejemplos Prácticos](#5-análisis-detallado-de-costes-de-rehidratación-y-ejemplos-prácticos)
+   * 5.1. [Estructura y Componentes de Coste de Rehidratación en Spain Central](#51-estructura-y-componentes-de-coste-de-rehidratación-en-spain-central)
+   * 5.2. [Ejemplo 1: Inspección Tributaria Ordinaria de la AEAT (100 GB / ~20.000 Facturas)](#ejemplo-1-inspección-tributaria-ordinaria-de-la-aeat-100-gb--20000-facturas)
+   * 5.3. [Ejemplo 2: Requerimiento Judicial Urgente (50 GB con Alta Prioridad < 1h)](#ejemplo-2-requerimiento-judicial-urgente-50-gb-con-alta-prioridad--1h)
+   * 5.4. [Ejemplo 3: Consulta Unitaria de Factura Aislada (1 Factura / 2 MB)](#ejemplo-3-consulta-unitaria-de-factura-aislada-1-factura--2-mb)
+   * 5.5. [Ejemplo 4: Rehidratación Prematura y Penalización por Retiro Anticipado](#ejemplo-4-rehidratación-prematura-y-penalización-por-retiro-anticipado-early-deletion)
+   * 5.6. [Matriz Comparativa: Coste de Rehidratación vs. Ahorro de Custodia Acumulado](#56-matriz-comparativa-coste-de-rehidratación-vs-ahorro-de-custodia-acumulado)
 6. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
@@ -106,22 +112,142 @@ Los datos transicionan automáticamente: *Hot* $\rightarrow$ *Cool* $\rightarrow
 
 ---
 
-## 5. Consideraciones Operativas, Recuperación y Rehidratación de Datos
+---
 
-Al diseñar una política de archivado para facturas de ERP, deben contemplarse los costes transaccionales de recuperación:
+## 5. Análisis Detallado de Costes de Rehidratación y Ejemplos Prácticos
 
-1. **Operaciones de Lectura / Descarga**:
-   * **Hot (Frecuente)**: Sin coste por recuperación de datos. Óptimo para descargas habituales desde el portal de clientes o la consulta diaria de contabilidad.
-   * **Cool (Esporádico)**: Tarifa de lectura reducida (~0,01 € por GB recuperado). Despreciable para revisiones trimestrales o cierres anuales.
-   * **Cold (Frío)**: Tarifa de recuperación intermedia (~0,03 € por GB). Altamente rentable para auditorías fiscales que ocurren esporádicamente una vez cada varios años.
-   * **Archive (Archivo)**: Tarifa de rehidratación (~0,022 € por GB) + latencia de desbloqueo (Prioridad Estándar: 3-15 horas; Alta Prioridad: < 1 hora). Dado que las facturas de más de 3 años de antigüedad prácticamente nunca se consultan salvo inspección tributaria formal, mantener 500 GB en Archive ahorra ~8,70 €/mes, mientras que rehidratar 10 GB para una inspección cuesta menos de 0,25 €.
-2. **Operaciones de Transición de Ciclo de Vida**:
-   * Mover blobs entre niveles genera un coste de operación de escritura por cada 10.000 blobs (~0,05 € - 0,10 €). Para un volumen de ~10.000 facturas mensuales, los cargos de transición equivalen a menos de 0,10 €/mes.
-3. **Plazos Mínimos de Retención por Nivel**:
-   * Cool: 30 días de retención mínima.
-   * Cold: 90 días de retención mínima.
-   * Archive: 180 días de retención mínima.
-   * *Nuestras reglas de ciclo de vida mueven los datos a los 90 días, 365 días y 1.095 días, superando holgadamente los límites mínimos exigidos por Azure y evitando penalizaciones por eliminación anticipada.*
+El nivel **Archivo (*Archive Tier*)** ofrece un coste de custodia extraordinariamente reducido (**0,00099 €/GB/mes en LRS**, **0,00125 €/GB/mes en ZRS** en Spain Central), pero los datos se encuentran en estado *offline*. Para leer o descargar facturas archivadas es necesario un proceso de **rehidratación** (traslado del blob desde *Archive* a *Cool* o *Hot*).
+
+A continuación se desglosan las tarifas oficiales de Azure para la región **Spain Central (Madrid)** y 4 casos prácticos numéricos que demuestran el coste real de una auditoría o inspección fiscal.
+
+---
+
+### 5.1. Estructura y Componentes de Coste de Rehidratación en Spain Central
+
+El coste total de rehidratar y consultar un lote de facturas se compone de 4 conceptos tarificados por Azure:
+
+$$\text{Coste Total Rehidratación} = C_{\text{recuperación}} + C_{\text{operaciones API}} + C_{\text{almacenamiento temporal}} + C_{\text{penalización anticipada}}$$
+
+| Concepto | Nivel / Modalidad | Tarifa Spain Central (Euros) | Descripción |
+| :--- | :--- | :--- | :--- |
+| **Recuperación de Datos (*Data Retrieval*)** | **Prioridad Estándar (*Standard*)** | **0,0220 € / GB** | Rehidratación en **3 a 15 horas**. Ideal para requerimientos tributarios ordinarios (plazo legal de 10 días hábiles). |
+| **Recuperación de Datos (*Data Retrieval*)** | **Alta Prioridad (*High Priority*)** | **0,1100 € / GB** | Rehidratación en **< 1 hora** (para blobs de hasta 10 GB). Para requerimientos urgentes o inspecciones presenciales. |
+| **Transacciones de Cambio de Nivel (*Set Blob Tier*)** | Nivel Archive | **0,055 € por 10.000 operaciones** | Cargo por invocar la API `SetBlobTier` o copiar el blob hacia el nivel en línea. |
+| **Lectura de Datos (*Get Blob*)** | Nivel Cool destino | **0,011 € por 10.000 lecturas** | Cargo por la descarga de los ficheros una vez rehidratados. |
+| **Almacenamiento Temporal Destino** | Nivel Cool | **0,0100 € / GB / mes** | Facturación prorrateada por los días que el dato permanezca en Cool antes de archivarse de nuevo. |
+| **Penalización por Retiro Anticipado (*Early Deletion*)** | Nivel Archive (< 180 días) | Prorrateo diario a **0,00099 € / GB / mes** | Solo aplica si el blob se rehidrata **antes de cumplir 180 días** en el nivel Archive. |
+
+> [!NOTE]
+> **Plazos Mínimos de Retención de Azure**:
+> * **Archive**: 180 días.
+> * **Cold**: 90 días.
+> * **Cool**: 30 días.
+> Dado que nuestra directiva de ciclo de vida traslada las facturas a *Archive* a los **1.095 días (3 años)** y las conserva hasta los **2.190 días (6 años)**, las facturas permanecen 3 años completos en Archive ($1.095\text{ días} \gg 180\text{ días}$), por lo que **la penalización por retiro anticipado es estrictamente 0,00 €** en operaciones ordinarias de auditoría.
+
+---
+
+### 5.2. Ejemplo 1: Inspección Tributaria Ordinaria de la AEAT (100 GB / ~20.000 Facturas)
+
+**Escenario**: La Agencia Tributaria notifica el inicio de un procedimiento de comprobación del Impuesto sobre Sociedades y solicita la entrega íntegra de las facturas emitidas y recibidas correspondientes al ejercicio fiscal de hace 4 años (año 4 de custodia, alojado en nivel *Archive*).
+
+* **Volumen del Lote**: **100 GB** (equivalente a ~20.000 facturas electrónicas compuestas por PDF de visualización y XML firmado VeriFactu/Facturae, con un tamaño medio de 5 MB por expediente).
+* **Prioridad Seleccionada**: **Prioridad Estándar (*Standard Priority*)**. Plazo de rehidratación: 3 a 15 horas (perfectamente compatible con el plazo de cortesía de 10 días concedido por la AEAT).
+* **Nivel de Destino**: **Esporádico (*Cool*)**, manteniéndose rehidratado durante **30 días** mientras los inspectores realizan la verificación.
+
+#### Desglose Matemático del Coste:
+1. **Recuperación de Datos (*Data Retrieval*)**:
+   $$100\text{ GB} \times 0,0220\text{ €/GB} = \mathbf{2,20\text{ €}}$$
+2. **Operaciones de API de Rehidratación (`SetBlobTier`)**:
+   $$20.000\text{ blobs} \times \left(\frac{0,055\text{ €}}{10.000\text{ ops}}\right) = \mathbf{0,11\text{ €}}$$
+3. **Descarga y Lectura de Datos (`GetBlob`)**:
+   $$20.000\text{ lecturas} \times \left(\frac{0,011\text{ €}}{10.000\text{ ops}}\right) = \mathbf{0,02\text{ €}}$$
+4. **Almacenamiento en Nivel Cool (30 días de inspección)**:
+   $$100\text{ GB} \times 0,0100\text{ €/GB/mes} \times \frac{30}{30} = \mathbf{1,00\text{ €}}$$
+5. **Penalización por Retiro Anticipado**:
+   $$\mathbf{0,00\text{ €}}\quad (\text{las facturas llevan 365 días en Archive, superando los 180 días mínimos})$$
+
+$$\mathbf{\text{Coste Total de la Auditoría AEAT: } 2,20 + 0,11 + 0,02 + 1,00 = 3,33\text{ €}}$$
+
+> [!TIP]
+> **Balance Financiero del Ejemplo 1**:
+> Mantener esos mismos 100 GB en nivel *Hot* durante los 3 años anteriores habría costado: $100\text{ GB} \times 0,0184\text{ €} \times 36\text{ meses} = \mathbf{66,24\text{ €}}$.
+> Al mantenerlos en *Archive* costó: $100\text{ GB} \times 0,00099\text{ €} \times 36\text{ meses} = \mathbf{3,56\text{ €}}$.
+> Incluso pagando la rehidratación completa para el auditor (3,33 €), la empresa ha logrado un **ahorro neto de 59,35 €** por cada 100 GB archivados.
+
+---
+
+### 5.3. Ejemplo 2: Requerimiento Judicial Urgente (50 GB con Alta Prioridad < 1h)
+
+**Escenario**: Un Juzgado de lo Mercantil emite un requerimiento judicial cautelar de exhibición urgente de contratos y pedidos de un litigio comercial, concediendo un plazo improrrogable de 3 horas para la entrega de la documentación probatoria.
+
+* **Volumen del Lote**: **50 GB** (~10.000 documentos).
+* **Prioridad Seleccionada**: **Alta Prioridad (*High Priority*)**. El hypervisor de Azure garantiza la disponibilidad del fichero en **menos de 60 minutos**.
+* **Nivel de Destino**: **Frecuente (*Hot*)**, descargándose de inmediato y retirándose a los 7 días.
+
+#### Desglose Matemático del Coste:
+1. **Recuperación de Datos Urgente (*High Priority Retrieval*)**:
+   $$50\text{ GB} \times 0,1100\text{ €/GB} = \mathbf{5,50\text{ €}}$$
+2. **Operaciones de API (`SetBlobTier`)**:
+   $$10.000\text{ blobs} \times \left(\frac{0,055\text{ €}}{10.000\text{ ops}}\right) = \mathbf{0,055\text{ €}}$$
+3. **Descarga de Datos (`GetBlob`)**:
+   $$10.000\text{ lecturas} \times \left(\frac{0,004\text{ €}}{10.000\text{ ops}}\right) = \mathbf{0,004\text{ €}}$$
+4. **Almacenamiento Temporal en Hot (7 días)**:
+   $$50\text{ GB} \times 0,0184\text{ €/GB/mes} \times \frac{7}{30} = \mathbf{0,21\text{ €}}$$
+
+$$\mathbf{\text{Coste Total de la Rehidratación Urgente: } 5,50 + 0,055 + 0,004 + 0,21 = 5,77\text{ €}}$$
+
+---
+
+### 5.4. Ejemplo 3: Consulta Unitaria de Factura Aislada (1 Factura / 2 MB)
+
+**Escenario**: Un cliente histórico o el departamento de atención contable solicita una copia de una factura de hace 5 años para cotejar una garantía de producto.
+
+* **Volumen**: 1 factura en formato PDF/A firmado (**2 MB** = $0,00195\text{ GB}$).
+* **Prioridad**: **Estándar** (3-15 horas).
+* **Nivel de Destino**: **Cool**.
+
+#### Desglose Matemático del Coste:
+1. **Recuperación de Datos**:
+   $$0,001953\text{ GB} \times 0,0220\text{ €/GB} = \mathbf{0,000043\text{ €}}$$
+2. **Transacción API**:
+   $$1 \text{ operación} \times \left(\frac{0,055\text{ €}}{10.000}\right) = \mathbf{0,0000055\text{ €}}$$
+3. **Almacenamiento en Cool (30 días)**:
+   $$0,001953\text{ GB} \times 0,0100\text{ €} = \mathbf{0,000020\text{ €}}$$
+
+$$\mathbf{\text{Coste Total: } \approx 0,00007\text{ € (menos de una centésima de céntimo)}}$$
+
+---
+
+### 5.5. Ejemplo 4: Rehidratación Prematura y Penalización por Retiro Anticipado (*Early Deletion*)
+
+**Escenario**: Por un error de clasificación en el ERP, se trasladó manualmente un lote de facturas de **20 GB** al nivel *Archive*. Al cabo de **45 días**, el departamento financiero detecta el error y ordena devolver las facturas al nivel *Cool* (faltan 135 días para cumplir el compromiso de retención mínima de 180 días de Archive).
+
+#### Desglose Matemático de la Penalización:
+* **Tarifa Diaria de Archive (LRS)**:
+  $$\frac{0,00099\text{ €/GB/mes}}{30\text{ días}} = 0,000033\text{ € por GB al día}$$
+* **Días Restantes Penalizados**: $180 - 45 = \mathbf{135\text{ días}}$.
+* **Cargo por Penalización de Retiro Anticipado**:
+  $$\text{Penalización} = 20\text{ GB} \times 0,000033\text{ €/GB/día} \times 135\text{ días} = \mathbf{0,089\text{ €}}$$
+* **Coste de Recuperación de Datos (Standard)**:
+  $$20\text{ GB} \times 0,0220\text{ €/GB} = \mathbf{0,440\text{ €}}$$
+* **Operaciones de API**: ~0,011 €.
+
+$$\mathbf{\text{Coste Total de la Operación Prematura: } 0,089 + 0,440 + 0,011 = \mathbf{0,54\text{ €}}}$$
+
+> [!IMPORTANT]
+> Incluso en el peor escenario operativo posible (rehidratación prematura antes de los 180 días), el coste de penalización de Azure es de tan solo **~0,09 €**, lo que ratifica la absoluta viabilidad económica de la arquitectura de archivado.
+
+---
+
+### 5.6. Matriz Comparativa: Coste de Rehidratación vs. Ahorro de Custodia Acumulado
+
+| Supuesto Operativo | Volumen / Tamaño | Prioridad | Tiempo de Espera | Coste de Rehidratación (€) | Ahorro Histórico Acumulado (€) | Rentabilidad Neta |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Factura Aislada** | 1 Factura (2 MB) | Estándar | 3 - 15 horas | **< 0,0001 €** | ~0,12 € | **Ahorro > 99%** |
+| **Auditoría Trimestral** | 25 GB (~5.000 docs) | Estándar | 3 - 15 horas | **~0,85 €** | ~14,80 € | **Ahorro > 94%** |
+| **Inspección Fiscal Anual (AEAT)** | 100 GB (~20.000 docs) | Estándar | 3 - 15 horas | **~3,33 €** | ~59,35 € | **Ahorro > 94%** |
+| **Requerimiento Judicial Urgente** | 50 GB (~10.000 docs) | Alta | **< 1 hora** | **~5,77 €** | ~29,70 € | **Ahorro > 80%** |
+| **Rehidratación Errónea (< 180d)** | 20 GB (Con penalización) | Estándar | 3 - 15 horas | **~0,54 €** | ~0,50 € | **Coste amortizado** |
 
 ---
 
