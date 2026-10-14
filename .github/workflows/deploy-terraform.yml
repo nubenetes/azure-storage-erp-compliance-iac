@@ -60,6 +60,16 @@ jobs:
       - name: "Checkout del Código"
         uses: actions/checkout@v4
 
+      - name: "Verificar Disponibilidad de Credenciales OIDC"
+        id: auth-check
+        run: |
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::notice ::Secret AZURE_CLIENT_ID no detectado. Se ejecutará linting y validación estática de Terraform sin plan remoto en Azure."
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: "Configurar Terraform"
         uses: hashicorp/setup-terraform@v3
         with:
@@ -67,7 +77,7 @@ jobs:
 
       - name: "Iniciar Sesión en Azure mediante OIDC"
         uses: azure/login@v2
-        if: env.ARM_CLIENT_ID != ''
+        if: steps.auth-check.outputs.has_creds == 'true'
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -84,7 +94,7 @@ jobs:
           terraform validate
 
       - name: "Generar Plan de Ejecución"
-        if: env.ARM_CLIENT_ID != ''
+        if: steps.auth-check.outputs.has_creds == 'true'
         working-directory: terraform
         run: |
           terraform plan \
@@ -102,19 +112,31 @@ jobs:
   # ============================================================================
   terraform-apply:
     name: "Terraform - Apply (Creación / Actualización)"
-    if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')) && secrets.AZURE_CLIENT_ID != ''
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: "Checkout del Código"
         uses: actions/checkout@v4
 
+      - name: "Verificar Disponibilidad de Credenciales OIDC"
+        id: auth-check
+        run: |
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::warning ::Secret AZURE_CLIENT_ID no configurado en este repositorio. Omitiendo despliegue en vivo en plantilla de referencia. Configure AZURE_CLIENT_ID, AZURE_TENANT_ID y AZURE_SUBSCRIPTION_ID para habilitar el despliegue automático."
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: "Configurar Terraform"
+        if: steps.auth-check.outputs.has_creds == 'true'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: "Iniciar Sesión en Azure mediante OIDC"
+        if: steps.auth-check.outputs.has_creds == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -122,12 +144,14 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: "Inicializar y Aplicar Terraform"
+        if: steps.auth-check.outputs.has_creds == 'true'
         working-directory: terraform
         run: |
           terraform init
           terraform apply -auto-approve
 
       - name: "Ejecutar Suite de Pruebas de Cumplimiento WORM (Día 2)"
+        if: steps.auth-check.outputs.has_creds == 'true'
         run: |
           chmod +x ./scripts/test-worm-compliance.sh
           echo "Despliegue completado con éxito. Infraestructura protegida y conforme."
@@ -137,7 +161,7 @@ jobs:
   # ============================================================================
   terraform-destroy:
     name: "Terraform - Decomisión Controlada (Destroy)"
-    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy') && secrets.AZURE_CLIENT_ID != ''
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
     runs-on: ubuntu-latest
     environment: production-decommission
     steps:
@@ -148,6 +172,14 @@ jobs:
             exit 1
           fi
           echo "Confirmación de seguridad validada correctamente."
+
+      - name: "Verificar Disponibilidad de Credenciales OIDC"
+        id: auth-check
+        run: |
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::error ::Secret AZURE_CLIENT_ID no configurado. Imposible realizar la decomisión sin credenciales de Azure."
+            exit 1
+          fi
 
       - name: "Checkout del Código"
         uses: actions/checkout@v4

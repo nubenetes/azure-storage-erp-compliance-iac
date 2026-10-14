@@ -42,7 +42,6 @@ permissions:
 env:
   AZURE_REGION: "spaincentral"
   RESOURCE_GROUP: "rg-erp-storage-prod-spaincentral"
-  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
 jobs:
   # ============================================================================
@@ -60,16 +59,26 @@ jobs:
         run: |
           az bicep build --file bicep/main.bicep
 
+      - name: "Verificar Disponibilidad de Credenciales OIDC"
+        id: auth-check
+        run: |
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::notice ::Secret AZURE_CLIENT_ID no detectado. Compilación de Bicep completada con éxito; omitiendo simulación What-If remota en Azure."
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: "Iniciar Sesión en Azure mediante OIDC"
         uses: azure/login@v2
-        if: env.ARM_CLIENT_ID != ''
+        if: steps.auth-check.outputs.has_creds == 'true'
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: "Ejecutar Simulación What-If en Azure"
-        if: env.ARM_CLIENT_ID != ''
+        if: steps.auth-check.outputs.has_creds == 'true'
         run: |
           az deployment group what-if \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
@@ -81,14 +90,25 @@ jobs:
   # ============================================================================
   bicep-deploy:
     name: "Bicep - Deploy (Producción)"
-    if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')) && secrets.AZURE_CLIENT_ID != ''
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: "Checkout del Código"
         uses: actions/checkout@v4
 
+      - name: "Verificar Disponibilidad de Credenciales OIDC"
+        id: auth-check
+        run: |
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::warning ::Secret AZURE_CLIENT_ID no configurado en este repositorio. Omitiendo despliegue en vivo en plantilla de referencia. Configure AZURE_CLIENT_ID, AZURE_TENANT_ID y AZURE_SUBSCRIPTION_ID para habilitar el despliegue automático."
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: "Iniciar Sesión en Azure mediante OIDC"
+        if: steps.auth-check.outputs.has_creds == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -96,10 +116,12 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: "Garantizar Grupo de Recursos"
+        if: steps.auth-check.outputs.has_creds == 'true'
         run: |
           az group create --name "${{ env.RESOURCE_GROUP }}" --location "${{ env.AZURE_REGION }}" --tags Workload=ERP Environment=Production
 
       - name: "Desplegar Plantilla Bicep"
+        if: steps.auth-check.outputs.has_creds == 'true'
         run: |
           az deployment group create \
             --name "deploy-erp-storage-$(date +%s)" \
@@ -108,6 +130,7 @@ jobs:
             --parameters bicep/main.bicepparam
 
       - name: "Verificación de Despliegue Exitoso"
+        if: steps.auth-check.outputs.has_creds == 'true'
         run: |
           echo "Despliegue de Bicep completado. Cuenta de almacenamiento y directivas WORM operativas."
 
@@ -116,7 +139,7 @@ jobs:
   # ============================================================================
   bicep-decommission:
     name: "Bicep - Decomisión Controlada"
-    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'decommission') && secrets.AZURE_CLIENT_ID != ''
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'decommission'
     runs-on: ubuntu-latest
     environment: production-decommission
     steps:
@@ -127,6 +150,17 @@ jobs:
             exit 1
           fi
           echo "Confirmación de seguridad validada correctamente."
+
+      - name: "Verificar Disponibilidad de Credenciales OIDC"
+        id: auth-check
+        run: |
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::error ::Secret AZURE_CLIENT_ID no configurado. Imposible realizar la decomisión sin credenciales de Azure."
+            exit 1
+          fi
+
+      - name: "Checkout del Código"
+        uses: actions/checkout@v4
 
       - name: "Iniciar Sesión en Azure mediante OIDC"
         uses: azure/login@v2
