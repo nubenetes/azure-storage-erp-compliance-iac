@@ -13,9 +13,25 @@ Enterprise reference architecture and multi-tool **Infrastructure as Code (IaC)*
 
 This project delivers fully automated implementations across **Terraform / OpenTofu**, **Azure CLI**, **PowerShell (Az module)**, **Ansible**, and **Azure Bicep**.
 
+> [!NOTE]
+> **AI Architecture Reference & Disclaimer**
+> 
+> This repository and its Infrastructure as Code (IaC) solutions have been generated with **Gemini 3.8 Flash**.
+> All templates, scripts, and configurations have been statically checked, formatted, and validated in CI (`terraform validate`, `az bicep build`, shell/PowerShell AST parser, and YAML linter), but **have not yet been deployed or tested in a live production environment**.
+> 
+> **Purpose**: This project serves as an **architectural reference blueprint, educational guide, and FinOps decision model**. It is designed to guide cloud architects and DevOps teams. Always test in a dedicated staging or sandbox subscription before executing permanent WORM policy locks in production.
+
 ---
 
 ## 🇪🇸 Resumen Ejecutivo (Español)
+
+> [!NOTE]
+> **Aviso de Referencia Arquitectónica Generada por IA**
+> 
+> Este repositorio y sus soluciones de Infraestructura como Código (IaC) han sido generados mediante **Gemini 3.8 Flash**.
+> El código y las plantillas han superado validaciones automatizadas en CI (`terraform validate`, compilación `bicep`, análisis sintáctico de scripts Bash/PowerShell y YAML), pero **aún no han sido probados en un entorno de producción real**.
+> 
+> **Propósito**: Su objetivo es servir como **anteproyecto de arquitectura de referencia y modelo de decisión técnica**. Se recomienda encarecidamente validar los despliegues en suscripciones de prueba o staging antes de aplicar bloqueos irreversibles WORM en producción.
 
 Para un sistema ERP en España (SAP, Microsoft Dynamics, Navision, Odoo o desarrollo propio), la arquitectura más eficiente y conforme a derecho consiste en:
 1. **Cuenta Standard General Purpose v2 (`StorageV2`) con redundancia ZRS** (distribuida en las 3 zonas de disponibilidad de Madrid) o **LRS**, desplegada en la región **Spain Central (`spaincentral`)**.

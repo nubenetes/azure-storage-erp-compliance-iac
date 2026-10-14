@@ -2,6 +2,14 @@
 
 This document outlines the architectural blueprint for storing and legally archiving ERP invoices and orders (up to 1 TB and scaling) in **Azure Blob Storage** within the **Spain Central (Madrid)** region.
 
+> [!NOTE]
+> **AI Architecture Reference & Disclaimer**
+> 
+> This architecture document and corresponding IaC modules were generated with **Gemini 3.8 Flash**.
+> While all code and templates have been validated through CI pipelines (Terraform, Bicep, shell/PowerShell parsers), they **have not yet been deployed or stress-tested in a live production environment**.
+> 
+> **Purpose**: This blueprint serves as an **architectural reference, educational model, and decision framework** for enterprise ERP storage compliance in Spain. Teams must validate all configurations in a sandbox environment before applying permanent WORM policy locks in production.
+
 ---
 
 ## Executive Summary & Value Proposition
