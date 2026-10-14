@@ -63,3 +63,17 @@ Microsoft Azure opera sus centros de datos de la región Spain Central bajo los 
 * **ENS (Esquema Nacional de Seguridad) - Categoría ALTO**: Certificado oficial emitido por BSI / CCN-CERT.
 * **ISO/IEC 27001, 27017, 27018, 27701**: Seguridad de la información y privacidad en la nube.
 * **SOC 1, SOC 2, SOC 3**: Informes de controles en organizaciones de servicios para auditorías financieras.
+
+---
+
+## 4. Referencias Oficiales y Publicaciones en Boletines Oficiales
+
+1. **Código de Comercio de España**: [Real Decreto de 22 de agosto de 1885 (BOE-A-1885-6627)](https://www.boe.es/buscar/act.php?id=BOE-A-1885-6627#a30).
+2. **Ley 58/2003, General Tributaria (LGT)**: [Texto consolidado (BOE-A-2003-23186)](https://www.boe.es/buscar/act.php?id=BOE-A-2003-23186).
+3. **Ley 11/2021 de Medidas contra el Fraude Fiscal**: [Publicación oficial (BOE-A-2021-11473)](https://www.boe.es/buscar/act.php?id=BOE-A-2021-11473).
+4. **Real Decreto 1007/2023 (Reglamento VeriFactu)**: [Requisitos de sistemas de facturación (BOE-A-2023-24840)](https://www.boe.es/buscar/act.php?id=BOE-A-2023-24840).
+5. **Agencia Estatal de Administración Tributaria (AEAT)**: [Guía técnica y normativa de Sistemas de Facturación](https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GZ28.shtml).
+6. **Reglamento General de Protección de Datos (RGPD)**: [Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo](https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX%3A32016R0679).
+7. **CCN-CERT / Esquema Nacional de Seguridad**: [Portal del Esquema Nacional de Seguridad (RD 311/2022)](https://www.ccn-cert.cni.es/ens.html).
+8. **Microsoft Learn - Almacenamiento Inmutable WORM**: [Documentación oficial de Azure Blob Storage Immutable](https://learn.microsoft.com/azure/storage/blobs/immutable-storage-overview).
+9. **Microsoft Learn - Niveles de Acceso y Precios**: [Azure Blob Storage Tiers and Lifecycle Management](https://learn.microsoft.com/azure/storage/blobs/access-tiers-overview).

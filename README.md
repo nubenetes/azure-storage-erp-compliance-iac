@@ -247,3 +247,27 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 ## 📜 License
 
 Distributed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) for more information.
+
+---
+
+## 📚 Public References & Official Documentation
+
+This architecture, financial model, and legal compliance baseline are built upon the following official legislation, regulatory publications, and cloud engineering references:
+
+### Spanish & European Legal Framework
+- **Código de Comercio (Art. 30)**: [Real Decreto de 22 de agosto de 1885 por el que se publica el Código de Comercio (BOE-A-1885-6627)](https://www.boe.es/buscar/act.php?id=BOE-A-1885-6627#a30) — *Mandatory 6-year retention period for commercial documentation, correspondence, and books.*
+- **Ley General Tributaria (LGT)**: [Ley 58/2003, de 17 de diciembre, General Tributaria (BOE-A-2003-23186)](https://www.boe.es/buscar/act.php?id=BOE-A-2003-23186) — *Articles 66–70 (4-year tax prescription) and Article 66 bis (10-year audit rights for deductions and negative tax bases / BINs).*
+- **Ley Antifraude**: [Ley 11/2021, de 9 de julio, de medidas de prevención y lucha contra el fraude fiscal (BOE-A-2021-11473)](https://www.boe.es/buscar/act.php?id=BOE-A-2021-11473) — *Article 29.2.j establishing mandatory integrity, conservation, accessibility, legibility, traceability, and inalterability.*
+- **Reglamento VeriFactu**: [Real Decreto 1007/2023, de 5 de diciembre (BOE-A-2023-24840)](https://www.boe.es/buscar/act.php?id=BOE-A-2023-24840) — *Technical regulations for computerized billing systems, hash chaining, electronic signatures, and tamper-proof event logs.*
+- **Agencia Estatal de Administración Tributaria (AEAT)**: [Portal Oficial VeriFactu y Sistemas Informáticos de Facturación](https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GZ28.shtml) — *Technical specifications, XML schemas, and verification web services.*
+- **Reglamento General de Protección de Datos (RGPD)**: [Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo](https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX%3A32016R0679) — *Territorial data sovereignty, European data residency, and legal obligation retention exemptions under Article 17.3.b.*
+
+### Microsoft Azure Architecture & Security References
+- **Azure Blob Storage Access Tiers**: [Hot, Cool, Cold, and Archive Access Tiers Overview](https://learn.microsoft.com/azure/storage/blobs/access-tiers-overview) — *Tier characteristics, retrieval latencies, and operation pricing models.*
+- **Azure Blob Storage Lifecycle Management**: [Optimize costs by automatically managing the data lifecycle](https://learn.microsoft.com/azure/storage/blobs/lifecycle-management-overview) — *Rule engines, filters, tier transitions, and snapshot/version policies.*
+- **Azure Immutable Storage (WORM)**: [Store business-critical blob data with immutable storage](https://learn.microsoft.com/azure/storage/blobs/immutable-storage-overview) — *Time-based retention policies, policy locking, legal holds, and regulatory compliance (SEC 17a-4(f), CFTC 1.31, FINRA).*
+- **WORM Policy Locking Guidelines**: [Configure time-based retention policies for immutable blob data](https://learn.microsoft.com/azure/storage/blobs/immutable-time-based-retention-policy-how-to) — *Locking mechanics, ETag validation, and permanent compliance state.*
+- **Azure Resource Locks**: [Lock resources to prevent unexpected changes](https://learn.microsoft.com/azure/azure-resource-manager/management/lock-resources) — *CanNotDelete management locks protecting infrastructure against human error and ransomware.*
+- **Azure Spain Central Datacenter Region**: [Azure Geography: Spain Central (Madrid)](https://azure.microsoft.com/explore/global-infrastructure/geographies/#spain) — *3 availability zones, intra-country ultra-low latency (< 10 ms), and local interconnection.*
+- **Esquema Nacional de Seguridad (ENS)**: [Azure Compliance Offering: Spain ENS (Nivel Alto)](https://learn.microsoft.com/compliance/regulatory/offering-spain-ens) — *Official accreditation under Real Decreto 311/2022 for regulated corporate and public workloads.*
+- **Azure Storage Pricing Matrix**: [Azure Blob Storage Pricing in Spain Central](https://azure.microsoft.com/pricing/details/storage/blobs/) — *Official pricing calculator and per-GB rates for storage, writes, reads, and rehydration.*
