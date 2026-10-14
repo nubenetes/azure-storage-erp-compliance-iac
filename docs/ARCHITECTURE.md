@@ -22,7 +22,7 @@ This document outlines the architectural blueprint for storing and legally archi
 ```mermaid
 flowchart TD
     subgraph ClientLayer["🏢 Corporate & ERP Ecosystem (Spain)"]
-        ERP["ERP System\n(SAP / Navision / Odoo / Custom)"]
+        ERP["ERP System<br/>(SAP / Navision / Odoo / Custom)"]
         Portal["Customer / Billing Portal"]
         Auditor["Tax / Legal Auditors (AEAT)"]
     end
@@ -31,24 +31,24 @@ flowchart TD
         subgraph RG["Resource Group: rg-erp-storage-spaincentral-prod"]
             Lock["🔒 Management Lock: CanNotDelete"]
             
-            subgraph SA["Storage Account: General Purpose v2 (StorageV2)\nSKU: Standard_ZRS (3 Availability Zones)\nTLS 1.2+ | Anonymous Access Blocked | Entra ID RBAC"]
+            subgraph SA["Storage Account: General Purpose v2 (StorageV2)<br/>SKU: Standard_ZRS (3 Availability Zones)<br/>TLS 1.2+ | Anonymous Access Blocked | Entra ID RBAC"]
                 
                 subgraph BlobService["Blob Service Properties"]
-                    SoftDel["🗑️ Soft Delete (30 Days)\nBlobs & Containers"]
-                    Version["📑 Blob Versioning\nEnabled"]
+                    SoftDel["🗑️ Soft Delete (30 Days)<br/>Blobs & Containers"]
+                    Version["📑 Blob Versioning<br/>Enabled"]
                 end
 
                 subgraph Containers["Immutability Policy (WORM)"]
-                    C1["📁 Container: facturas\nTime-based retention: 2,190 days\nAppend Allowed: True"]
-                    C2["📁 Container: pedidos\nTime-based retention: 2,190 days\nAppend Allowed: True"]
+                    C1["📁 Container: facturas<br/>Time-based retention: 2,190 days<br/>Append Allowed: True"]
+                    C2["📁 Container: pedidos<br/>Time-based retention: 2,190 days<br/>Append Allowed: True"]
                 end
 
                 subgraph Lifecycle["Automatic Lifecycle Management Policy"]
                     direction LR
-                    T_Hot["🔥 Hot Tier\n0 - 90 Days\nImmediate Read\nNo read fee"]
-                    T_Cool["❄️ Cool Tier\n91 - 365 Days\nImmediate Read\n~50% storage saving"]
-                    T_Cold["🧊 Cold Tier\n1 - 3 Years\nImmediate Read\n~76% storage saving"]
-                    T_Archive["📦 Archive Tier\n3 - 6+ Years\nRehydration in hours\n~95% storage saving\n(0.00099 €/GB/mo)"]
+                    T_Hot["🔥 Hot Tier<br/>0 - 90 Days<br/>Immediate Read<br/>No read fee"]
+                    T_Cool["❄️ Cool Tier<br/>91 - 365 Days<br/>Immediate Read<br/>~50% storage saving"]
+                    T_Cold["🧊 Cold Tier<br/>1 - 3 Years<br/>Immediate Read<br/>~76% storage saving"]
+                    T_Archive["📦 Archive Tier<br/>3 - 6+ Years<br/>Rehydration in hours<br/>~95% storage saving<br/>(0.00099 €/GB/mo)"]
 
                     T_Hot -->|After 90 days| T_Cool
                     T_Cool -->|After 365 days| T_Cold
@@ -58,11 +58,11 @@ flowchart TD
         end
     end
 
-    ERP -->|REST / SDK (TLS 1.2+)| C1
-    ERP -->|REST / SDK (TLS 1.2+)| C2
-    Portal -->|SAS Token / Entra ID| T_Hot
-    Auditor -->|Audit Access| T_Cold
-    Auditor -.->|Rehydrate on-demand| T_Archive
+    ERP -->|"REST / SDK (TLS 1.2+)"| C1
+    ERP -->|"REST / SDK (TLS 1.2+)"| C2
+    Portal -->|"SAS Token / Entra ID"| T_Hot
+    Auditor -->|"Audit Access"| T_Cold
+    Auditor -.->|"Rehydrate on-demand"| T_Archive
 ```
 
 ---

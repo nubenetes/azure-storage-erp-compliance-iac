@@ -36,31 +36,31 @@ Para un sistema ERP en España (SAP, Microsoft Dynamics, Navision, Odoo o desarr
 ```mermaid
 flowchart TD
     subgraph Corporate["🏢 ERP & Corporate Billing Clients (Spain)"]
-        ERP["ERP System\n(SAP / Dynamics / Odoo)"]
-        Auditor["Tax & Legal Auditors\n(AEAT / Compliance)"]
+        ERP["ERP System<br/>(SAP / Dynamics / Odoo)"]
+        Auditor["Tax & Legal Auditors<br/>(AEAT / Compliance)"]
     end
 
     subgraph AzureSpain["🇪🇸 Azure Spain Central (Madrid)"]
         subgraph RG["Resource Group: rg-erp-storage-prod-spaincentral"]
             Lock["🔒 Management Lock: CanNotDelete"]
             
-            subgraph StorageAccount["Storage Account: StorageV2 (Standard_ZRS)\nTLS 1.2+ | No Public Access | Entra ID RBAC"]
+            subgraph StorageAccount["Storage Account: StorageV2 (Standard_ZRS)<br/>TLS 1.2+ | No Public Access | Entra ID RBAC"]
                 subgraph Protection["Resilience & Protection"]
-                    SoftDel["🗑️ Soft Delete (30 Days)\nBlobs & Containers"]
-                    Vers["📑 Blob Versioning\nEnabled"]
+                    SoftDel["🗑️ Soft Delete (30 Days)<br/>Blobs & Containers"]
+                    Vers["📑 Blob Versioning<br/>Enabled"]
                 end
 
                 subgraph Containers["WORM Containers (2,190 days retention)"]
-                    C_Facturas["📁 facturas\nTime-based retention: 6 yrs\nAppend allowed"]
-                    C_Pedidos["📁 pedidos\nTime-based retention: 6 yrs\nAppend allowed"]
+                    C_Facturas["📁 facturas<br/>Time-based retention: 6 yrs<br/>Append allowed"]
+                    C_Pedidos["📁 pedidos<br/>Time-based retention: 6 yrs<br/>Append allowed"]
                 end
 
                 subgraph Lifecycle["Automatic Lifecycle Management Rules"]
                     direction LR
-                    Hot["🔥 Hot (0-90d)\nActive Billing\nZero read fee"]
-                    Cool["❄️ Cool (91-365d)\nFiscal close\n~46% savings"]
-                    Cold["🧊 Cold (1-3y)\nAudits\n~76% savings"]
-                    Archive["📦 Archive (3-6+y)\nLegal custody\n~95% savings (<1€/mo)"]
+                    Hot["🔥 Hot (0-90d)<br/>Active Billing<br/>Zero read fee"]
+                    Cool["❄️ Cool (91-365d)<br/>Fiscal close<br/>~46% savings"]
+                    Cold["🧊 Cold (1-3y)<br/>Audits<br/>~76% savings"]
+                    Archive["📦 Archive (3-6+y)<br/>Legal custody<br/>~95% savings (<1€/mo)"]
 
                     Hot -->|90 days| Cool
                     Cool -->|365 days| Cold
@@ -70,9 +70,10 @@ flowchart TD
         end
     end
 
-    ERP -->|REST / SDK (TLS 1.2+)| Containers
-    Auditor -->|Online Query| Cold
-    Auditor -.->|Rehydrate in hours| Archive
+    ERP -->|"REST / SDK (TLS 1.2+)"| C_Facturas
+    ERP -->|"REST / SDK (TLS 1.2+)"| C_Pedidos
+    Auditor -->|"Online Query"| Cold
+    Auditor -.->|"Rehydrate in hours"| Archive
 ```
 
 ---
