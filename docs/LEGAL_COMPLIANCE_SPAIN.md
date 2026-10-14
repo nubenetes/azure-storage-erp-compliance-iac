@@ -33,6 +33,15 @@ Este documento detalla los fundamentos jurídicos españoles y europeos que regu
 
 ---
 
+---
+
+### 🎥 Recursos Audiovisuales y Guías de Cumplimiento Legal en YouTube
+Este marco normativo se complementa con guías audiovisuales explicativas en el canal [**@nubenetes**](https://youtube.com/@nubenetes):
+- 📽️ [**Azure Storage WORM Optimizado: Arquitectura y Cumplimiento Legal en Spain Central**](https://www.youtube.com/watch?v=IZBAQg3kP7c) (`7:57`) — *Análisis del marco regulatorio, inmutabilidad temporal y soberanía en Spain Central.*
+- 📽️ [**FinOps y WORM en Azure: Custodia Legal de Facturas sin Sobrecostes Cloud**](https://www.youtube.com/watch?v=A28ztMSJuPc) (`8:36`) — *Art. 30 Código de Comercio, Ley Antifraude, régimen sancionador y bloqueo Policy Lock.*
+
+---
+
 ## 1. Matriz de Mapeo Normativo y Técnico
 
 | Normativa | Ámbito y Artículo | Requisito Legal | Implementación Técnica en Azure |

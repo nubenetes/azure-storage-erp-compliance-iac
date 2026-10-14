@@ -41,9 +41,10 @@ Este proyecto proporciona implementaciones automatizadas completas en **Terrafor
 * [8. 🧪 Operaciones Día 2, Pruebas Automatizadas y FinOps](#-operaciones-día-2-pruebas-automatizadas-y-finops)
 * [9. 🔒 Advertencia Crítica sobre el Bloqueo de la Directiva WORM](#-advertencia-crítica-sobre-el-bloqueo-de-la-directiva-worm)
 * [10. 📂 Estructura del Repositorio](#-estructura-del-repositorio)
-* [11. 📚 Referencias Públicas y Documentación Oficial](#-referencias-públicas-y-documentación-oficial)
-* [12. 🤝 Contribuciones](#-contribuciones)
-* [13. 📜 Licencia](#-licencia)
+* [11. 🎥 Sesiones Técnicas en Vídeo y Recursos Multimedia (YouTube)](#-sesiones-técnicas-en-vídeo-y-recursos-multimedia-youtube)
+* [12. 📚 Referencias Públicas y Documentación Oficial](#-referencias-públicas-y-documentación-oficial)
+* [13. 🤝 Contribuciones](#-contribuciones)
+* [14. 📜 Licencia](#-licencia)
 
 ---
 
@@ -408,9 +409,216 @@ azure-storage-erp-compliance-iac/
 
 ---
 
+## 🎥 Sesiones Técnicas en Vídeo y Recursos Multimedia (YouTube)
+
+La arquitectura de almacenamiento inmutable WORM, las estrategias FinOps de ciclo de vida y los protocolos de cumplimiento legal para sistemas ERP en Azure Spain Central cuentan con una serie audiovisual dedicada sintetizada con **Gemini NotebookLM**.
+
+Todos los episodios y vídeos técnicos están disponibles en el canal oficial de YouTube [**@nubenetes**](https://youtube.com/@nubenetes).
+
+> [!NOTE]
+> **Experiencia de Aprendizaje en Español 🇪🇸**:
+> Todo el contenido audiovisual cuenta con locución nativa en **español** y subtítulos traducidos automáticamente (CC) a más de **20 idiomas** para equipos multinacionales de arquitectura cloud, FinOps y ciberseguridad.
+
+### 📊 Colección de Vídeos Técnicos y Recursos Audiovisuales (5 Entregas)
+
+| Formato | Episodio / Título | Enfoque / Dominio Técnico | Idioma | Duración | Enlace Directo en YouTube |
+|:---:|---|---|:---:|:---:|---|
+| 📽️ **Vídeo Guía** | [**Azure Storage WORM Optimizado: Arquitectura y Cumplimiento Legal en Spain Central**](https://www.youtube.com/watch?v=IZBAQg3kP7c) | **Arquitectura Global**: Spain Central, WORM, VeriFactu, retención a 6 años y protección de datos | 🇪🇸 Español *(CC 20+)* | `7:57` | [▶️ Ver Vídeo](https://www.youtube.com/watch?v=IZBAQg3kP7c) |
+| 📽️ **Vídeo Guía** | [**Azure ERP: Más del 75% de Ahorro FinOps con Ciclo de Vida y Storage WORM**](https://www.youtube.com/watch?v=Ck36Qyz0QJs) | **Ingeniería FinOps**: TCO para 1 TB, progresión Hot a Archive y ahorro neto del 75% | 🇪🇸 Español *(CC 20+)* | `6:00` | [▶️ Ver Vídeo](https://www.youtube.com/watch?v=Ck36Qyz0QJs) |
+| 📽️ **Vídeo Guía** | [**FinOps y WORM en Azure: Custodia Legal de Facturas sin Sobrecostes Cloud**](https://www.youtube.com/watch?v=A28ztMSJuPc) | **Marco Normativo & Sanciones**: Art. 30 Cód. Comercio, Ley Antifraude y bloqueo Policy Lock | 🇪🇸 Español *(CC 20+)* | `8:36` | [▶️ Ver Vídeo](https://www.youtube.com/watch?v=A28ztMSJuPc) |
+| 📽️ **Vídeo Guía** | [**Coste y Estrategia de Rehidratación en Azure WORM: De Archive a Auditoría**](https://www.youtube.com/watch?v=RoGpL_4YGkA) | **Operaciones de Rehidratación**: Costes por lote de 100 GB, SLAs Estándar vs Alta Prioridad | 🇪🇸 Español *(CC 20+)* | `7:34` | [▶️ Ver Vídeo](https://www.youtube.com/watch?v=RoGpL_4YGkA) |
+| ⚡ **Short Técnico** | [**Cómo Archivar Facturas Seis Años en Azure sin Arruinarte**](https://www.youtube.com/shorts/7ZerGBHznr8) | **Píldora Rápida**: Custodia legal de 6 años, ciclo de vida en 4 escalones y ahorro del 75% | 🇪🇸 Español *(CC 20+)* | `1:08` | [▶️ Ver Short](https://www.youtube.com/shorts/7ZerGBHznr8) |
+
+<details>
+<summary>📂 <strong>Desglose Detallado de Sesiones y Agendas Técnicas</strong></summary>
+
+<br/>
+
+#### 1. Azure Storage WORM Optimizado: Arquitectura y Cumplimiento Legal en Spain Central (7:57)
+- 🔗 **Enlace Directo**: [https://www.youtube.com/watch?v=IZBAQg3kP7c](https://www.youtube.com/watch?v=IZBAQg3kP7c)
+- ⏱️ **Duración**: 7:57
+- 🏷️ **Dominio**: Arquitectura Global, Spain Central, WORM, VeriFactu y Seguridad
+- 📝 **Descripción Completa**:
+> 🏛️ Guía de Arquitectura Cloud: Azure Storage WORM Optimizado para ERP y Cumplimiento Legal
+>
+> Análisis técnico exhaustivo de 8 minutos sobre la arquitectura de referencia en Azure Blob Storage (StorageV2) desplegada en la región Spain Central (Madrid) para el archivo inmutable y legal de facturas y pedidos de ERP.
+>
+> Descubre cómo blindar tu organización frente a sanciones tributarias implementando inmutabilidad WORM a 6 años (2.190 días) mientras optimizas radicalmente la factura cloud mediante políticas automatizadas de ciclo de vida.
+>
+> 📌 Puntos Clave de la Sesión:
+>
+> - El Dilema del Cumplimiento y el Coste: La obligación legal de conservar facturas durante 6 años (Código de Comercio Art. 30) y el riesgo de costes desorbitados en la nube.
+>
+> - Arquitectura en Spain Central: Despliegue en centros de datos de Madrid con redundancia ZRS o LRS, latencia ultrabaja (menor a 10 ms) y certificación ENS Nivel Alto.
+>
+> - Inmutabilidad WORM y VeriFactu: Directivas de retención temporal basadas en tiempo con allowProtectedAppendWrites para encadenamiento de hashes y logs de auditoría sin sobrescritura.
+>
+> - Ciclo de Vida Automatizado en 4 Fases: Progresión técnica de Hot (0-90d) a Cool (91-365d), Cold (1-3 años) y Archive (3-6+ años), reduciendo el almacenamiento hasta un 95%.
+>
+> - Gobernanza y Protección Antiransomware: Combinación de Soft Delete de 30 días, versionado de blobs y bloqueo CanNotDelete a nivel de recurso.
+>
+> 🔗 Repositorio Oficial y Documentación Técnica:
+>
+> - Repositorio Blueprint en GitHub: https://github.com/nubenetes/azure-storage-erp-compliance-iac
+>
+> - Documento de Arquitectura y Cumplimiento: https://github.com/nubenetes/azure-storage-erp-compliance-iac/blob/main/docs/LEGAL_COMPLIANCE_SPAIN.md
+>
+> - Documentación Oficial de Azure Storage WORM: https://learn.microsoft.com/azure/storage/blobs/immutable-storage-overview
+>
+> ⏱️ Duración: 7:57
+> #Azure #AzureStorage #WORM #FinOps #VeriFactu #LeyAntifraude #SpainCentral #CloudArchitecture #ERP #DevOps
+
+#### 2. Azure ERP: Más del 75% de Ahorro FinOps con Ciclo de Vida y Storage WORM (6:00)
+- 🔗 **Enlace Directo**: [https://www.youtube.com/watch?v=Ck36Qyz0QJs](https://www.youtube.com/watch?v=Ck36Qyz0QJs)
+- ⏱️ **Duración**: 6:00
+- 🏷️ **Dominio**: Ingeniería FinOps, TCO para 1 TB, Progresión de Niveles y Reducción de Costes
+- 📝 **Descripción Completa**:
+> 💰 Análisis Financiero FinOps: Más del 75% de Ahorro en Almacenamiento ERP con Azure Blob Storage
+>
+> Masterclass financiera de 6 minutos destripando el modelo matemático de Coste Total de Propiedad (TCO) para custodiar 1 TB de facturas y pedidos de ERP en Azure Spain Central durante 6 años.
+>
+> Aprende a transformar un gasto fijo recurrente de almacenamiento de 19 euros al mes en apenas 4,37 euros al mes (LRS) o 5,43 euros al mes (ZRS), alcanzando más de un 75% de ahorro neto acumulado.
+>
+> 📌 Módulos Financieros y Estratégicos:
+>
+> - El Quebradero de Cabeza de los Costes TI: Por qué mantener históricos contables en nivel Hot durante años destruye el presupuesto operativo cloud.
+>
+> - Modelo TCO para 1 TB en Régimen Estable: Distribución matemática real de datos entre Hot (41 GB), Cool (125 GB), Cold (333 GB) y Archive (500 GB).
+>
+> - Comparativa de Tarifas en Spain Central: Desglose por gigabyte desde 0,0184 euros en Hot hasta 0,00099 euros en Archive (95% de descuento).
+>
+> - Impacto Acumulado a 6 Años: Un ahorro financiero neto superior a 1.038 euros por cada TB gestionado sin perder cumplimiento legal.
+>
+> - Operaciones y Transiciones de Nivel: Control del coste por transacciones de escritura (Write Ops) y balance positivo frente al ahorro de capacidad.
+>
+> 🔗 Repositorio Oficial y Documentación Técnica:
+>
+> - Repositorio Blueprint en GitHub: https://github.com/nubenetes/azure-storage-erp-compliance-iac
+>
+> - Estudio Detallado de Optimización FinOps: https://github.com/nubenetes/azure-storage-erp-compliance-iac/blob/main/docs/COST_OPTIMIZATION.md
+>
+> - Precios y Niveles de Azure Blob Storage: https://learn.microsoft.com/azure/storage/blobs/access-tiers-overview
+>
+> ⏱️ Duración: 6:00
+> #Azure #FinOps #AzureStorage #OptimizacionDeCostes #AhorroCloud #SpainCentral #CloudCost #TCO #DevOps #SRE
+
+#### 3. FinOps y WORM en Azure: Custodia Legal de Facturas sin Sobrecostes Cloud (8:36)
+- 🔗 **Enlace Directo**: [https://www.youtube.com/watch?v=A28ztMSJuPc](https://www.youtube.com/watch?v=A28ztMSJuPc)
+- ⏱️ **Duración**: 8:36
+- 🏷️ **Dominio**: Marco Normativo, Ley Antifraude, Régimen Sancionador y Policy Lock
+- 📝 **Descripción Completa**:
+> ⚖️ Estrategia Legal y FinOps: Custodia Inmutable WORM de Facturas en Azure sin Sobrecostes
+>
+> Guía técnica de 8 minutos analizando el punto de encuentro exacto entre la arquitectura de datos, el cumplimiento legal mercantil en España y la ingeniería financiera FinOps en la nube.
+>
+> Aprende a configurar directivas de retención temporal bloqueadas (Policy Lock) que garantizan la inalterabilidad ante la AEAT y evitan sanciones de hasta 200.000 euros.
+>
+> 📌 Claves Legales y Operativas Analizadas:
+>
+> - Mapeo Normativo Español: Obligación de custodia a 6 años por el Artículo 30 del Código de Comercio y prescripción tributaria según la Ley General Tributaria.
+>
+> - Régimen Sancionador por Falta de WORM: Multas fijas de 50.000 euros por ejercicio (Ley Antifraude / VeriFactu) y riesgo de calificación de concurso culpable.
+>
+> - El Proceso Crítico de Bloqueo Policy Lock: Diferencia entre directivas en estado Unlocked (editable para pruebas) y Locked (permanente e irreversible).
+>
+> - Cómo Evitar Penalizaciones Early Deletion: Respetar los tiempos mínimos de permanencia (Cool 30 días, Cold 90 días, Archive 180 días) para no pagar recargos.
+>
+> - Coexistencia de Bloqueos Legales (Legal Hold): Cómo fijar y liberar marcas de retención específicas durante litigios o inspecciones activas sin alterar el ciclo de vida.
+>
+> 🔗 Repositorio Oficial y Documentación Técnica:
+>
+> - Repositorio Blueprint en GitHub: https://github.com/nubenetes/azure-storage-erp-compliance-iac
+>
+> - Guía de Cumplimiento Legal y Régimen Sancionador: https://github.com/nubenetes/azure-storage-erp-compliance-iac/blob/main/docs/LEGAL_COMPLIANCE_SPAIN.md
+>
+> - Guía Oficial de Bloqueo WORM en Azure: https://learn.microsoft.com/azure/storage/blobs/immutable-time-based-retention-policy-how-to
+>
+> ⏱️ Duración: 8:36
+> #Azure #FinOps #WORM #Compliance #LeyAntifraude #VeriFactu #CodigoDeComercio #AzureStorage #SpainCentral #CloudSecurity
+
+#### 4. Coste y Estrategia de Rehidratación en Azure WORM: De Archive a Auditoría (7:34)
+- 🔗 **Enlace Directo**: [https://www.youtube.com/watch?v=RoGpL_4YGkA](https://www.youtube.com/watch?v=RoGpL_4YGkA)
+- ⏱️ **Duración**: 7:34
+- 🏷️ **Dominio**: Operaciones de Rehidratación, Costes por Lote, Prioridades y SLAs
+- 📝 **Descripción Completa**:
+> 🧊 Guía Operativa de Rehidratación: Cómo Recuperar Facturas de Archive en Azure WORM sin Sorpresas
+>
+> Guía de ingeniería de 7 minutos detallando la estrategia de rehidratación desde el nivel Archivo (Archive) hacia niveles en línea (Hot o Cool) ante auditorías de la AEAT o requerimientos judiciales.
+>
+> Descubre cómo calcular con precisión matemática los costes de rehidratación, elegir las prioridades correctas según los acuerdos de nivel de servicio (SLAs) y diseñar la integración con tu ERP.
+>
+> 📌 Protocolos y Cálculos de Rehidratación:
+>
+> - El Dilema del Modo Archivo: Datos fuera de línea que ahorran un 95% mensual pero requieren un proceso explícito de lectura.
+>
+> - Tiempos de Respuesta y SLAs: Prioridad Estándar (3 a 15 horas para facturación masiva) vs Prioridad Alta (menos de 1 hora para requerimientos judiciales urgentes).
+>
+> - Desglose Matemático de Costes: Análisis real para un lote de 100 GB (~20.000 facturas) costando tan solo 3,33 euros en prioridad estándar.
+>
+> - Métodos de Rehidratación: Cambio directo de nivel (Set Blob Tier) frente a copia de rehidratación (Copy Blob) para mantener la directiva WORM en Archive.
+>
+> - Diseño de Integración ERP: Notificaciones asíncronas con Azure Event Grid, webhooks de finalización y entrega al usuario final sin bloquear el sistema.
+>
+> 🔗 Repositorio Oficial y Documentación Técnica:
+>
+> - Repositorio Blueprint en GitHub: https://github.com/nubenetes/azure-storage-erp-compliance-iac
+>
+> - Guía de Integración ERP y Rehidratación: https://github.com/nubenetes/azure-storage-erp-compliance-iac/blob/main/docs/ERP_INTEGRATION_AND_REHYDRATION.md
+>
+> - Documentación de Rehidratación de Azure Blobs: https://learn.microsoft.com/azure/storage/blobs/archive-rehydrate-overview
+>
+> ⏱️ Duración: 7:34
+> #Azure #AzureStorage #ArchiveTier #Rehidratacion #FinOps #Auditoria #WORM #CloudArchitecture #ERP #DevOps
+
+#### 5. Cómo Archivar Facturas Seis Años en Azure sin Arruinarte (1:08)
+- 🔗 **Enlace Directo**: [https://www.youtube.com/shorts/7ZerGBHznr8](https://www.youtube.com/shorts/7ZerGBHznr8)
+- ⏱️ **Duración**: 1:08
+- 🏷️ **Dominio**: Píldora Rápida, 4 Niveles de Ciclo de Vida y Ahorro del 75%
+- 📝 **Descripción Completa**:
+> ⚡ Technical Short: Cómo Archivar Facturas Seis Años en Azure sin Arruinarte
+>
+> Hacienda y el Código de Comercio exigen custodiar facturas durante 6 años. Mantener esos datos en la nube a máximo rendimiento puede disparar tus costes. Descubre cómo combinar almacenamiento inmutable WORM y reglas automáticas de ciclo de vida en Azure Spain Central.
+>
+> 📌 El Ciclo de Vida en 4 Pasos:
+>
+> - Facturación Activa (Hot Tier): Lectura inmediata y sin coste por descarga durante los primeros 90 días de emisión.
+>
+> - Cierre Contable y Auditoría (Cool y Cold Tier): Transición automática a los 90 y 365 días ahorrando entre un 46% y un 76%.
+>
+> - Custodia Legal a Largo Plazo (Archive Tier): A los 3 años los datos pasan a Archive reduciendo el coste un 95% a céntimos al mes.
+>
+> - Cumplimiento y Ahorro Blindado: 1 TB de facturas cumple íntegramente los 6 años bajo candado inmutable con más del 75% de ahorro total.
+>
+> 🔗 Repositorio Oficial y Documentación Técnica:
+>
+> - Repositorio Blueprint en GitHub: https://github.com/nubenetes/azure-storage-erp-compliance-iac
+>
+> - Análisis Financiero y Modelo TCO: https://github.com/nubenetes/azure-storage-erp-compliance-iac/blob/main/docs/COST_OPTIMIZATION.md
+>
+> - Documentación Oficial de Azure Storage: https://learn.microsoft.com/azure/storage/blobs/storage-blobs-introduction
+>
+> ⏱️ Duración: 1:08
+> #Shorts #Azure #AzureStorage #FinOps #WORM #LeyAntifraude #VeriFactu #AhorroCloud #ERP #CloudArchitecture
+
+</details>
+
+---
+
+
 ## 📚 Referencias Públicas y Documentación Oficial
 
 Esta arquitectura, modelo financiero y base de cumplimiento legal se fundamentan en la siguiente legislación oficial, publicaciones regulatorias y estándares de ingeniería cloud:
+
+### Recursos Audiovisuales y Guías Técnicas en YouTube (@nubenetes)
+- **Canal de YouTube**: [**@nubenetes**](https://youtube.com/@nubenetes) — *Sesiones de ingeniería cloud, arquitectura FinOps y ciberseguridad.*
+- **Catálogo de Vídeos de esta Arquitectura**: Consulte la sección [Sesiones Técnicas en Vídeo y Recursos Multimedia](#-sesiones-técnicas-en-vídeo-y-recursos-multimedia-youtube) para el desglose íntegro.
+  - 📽️ [Azure Storage WORM Optimizado: Arquitectura y Cumplimiento Legal en Spain Central](https://www.youtube.com/watch?v=IZBAQg3kP7c) (`7:57`)
+  - 📽️ [Azure ERP: Más del 75% de Ahorro FinOps con Ciclo de Vida y Storage WORM](https://www.youtube.com/watch?v=Ck36Qyz0QJs) (`6:00`)
+  - 📽️ [FinOps y WORM en Azure: Custodia Legal de Facturas sin Sobrecostes Cloud](https://www.youtube.com/watch?v=A28ztMSJuPc) (`8:36`)
+  - 📽️ [Coste y Estrategia de Rehidratación en Azure WORM: De Archive a Auditoría](https://www.youtube.com/watch?v=RoGpL_4YGkA) (`7:34`)
+  - ⚡ [Cómo Archivar Facturas Seis Años en Azure sin Arruinarte](https://www.youtube.com/shorts/7ZerGBHznr8) (`1:08`)
+
+---
 
 ### Marco Jurídico Español y Europeo
 - **Código de Comercio (Art. 30)**: [Real Decreto de 22 de agosto de 1885 por el que se publica el Código de Comercio (BOE-A-1885-6627)](https://www.boe.es/buscar/act.php?id=BOE-A-1885-6627#a30) — *Plazo legal obligatorio de 6 años de conservación de libros, correspondencia y documentación comercial.*

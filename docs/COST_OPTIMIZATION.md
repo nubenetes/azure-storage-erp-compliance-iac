@@ -32,6 +32,16 @@ Este documento proporciona la justificación financiera, matemática y operativa
 
 ---
 
+---
+
+### 🎥 Recursos Audiovisuales y Guías de FinOps en YouTube
+Este análisis financiero y el modelo TCO se complementan con videotutoriales técnicos sintetizados con **Gemini NotebookLM** en el canal [**@nubenetes**](https://youtube.com/@nubenetes):
+- 📽️ [**Azure ERP: Más del 75% de Ahorro FinOps con Ciclo de Vida y Storage WORM**](https://www.youtube.com/watch?v=Ck36Qyz0QJs) (`6:00`) — *Desglose matemático del TCO de 1 TB, progresión Hot a Archive y ahorro neto del 75%.*
+- 📽️ [**Coste y Estrategia de Rehidratación en Azure WORM: De Archive a Auditoría**](https://www.youtube.com/watch?v=RoGpL_4YGkA) (`7:34`) — *Cálculos de rehidratación por lote de 100 GB, prioridades Estándar vs Alta y retención WORM.*
+- ⚡ [**Cómo Archivar Facturas Seis Años en Azure sin Arruinarte**](https://www.youtube.com/shorts/7ZerGBHznr8) (`1:08`) — *Píldora rápida de 1 minuto resumiendo el ciclo de vida en 4 niveles y el cumplimiento legal.*
+
+---
+
 ## 1. Comparativa de Precios Regionales (Spain Central vs. West Europe vs. North Europe)
 
 Precios oficiales de referencia en Euros (€) para cuentas *Standard General Purpose v2*:

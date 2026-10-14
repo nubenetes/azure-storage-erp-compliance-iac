@@ -22,6 +22,14 @@ Esta guía detalla cómo los sistemas ERP empresariales (SAP, Microsoft Dynamics
 
 ---
 
+---
+
+### 🎥 Recursos Audiovisuales y Guías de Rehidratación en YouTube
+La estrategia operativa de rehidratación ante auditorías cuenta con un vídeo técnico en el canal [**@nubenetes**](https://youtube.com/@nubenetes):
+- 📽️ [**Coste y Estrategia de Rehidratación en Azure WORM: De Archive a Auditoría**](https://www.youtube.com/watch?v=RoGpL_4YGkA) (`7:34`) — *SLAs Estándar vs Alta Prioridad, coste por lote de 100 GB y diseño de integración asíncrona.*
+
+---
+
 ## 1. Autenticación: Modelo Zero Trust y Microsoft Entra ID (RBAC)
 
 **Nunca** incruste ni almacene claves fijas de cuenta de almacenamiento (*Storage Account Keys*) en el código fuente ni en ficheros de configuración del ERP. En su lugar, utilice el control de acceso basado en roles **Microsoft Entra ID RBAC**:
