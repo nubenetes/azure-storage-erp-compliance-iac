@@ -42,6 +42,7 @@ permissions:
 env:
   AZURE_REGION: "spaincentral"
   RESOURCE_GROUP: "rg-erp-storage-prod-spaincentral"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
 jobs:
   # ============================================================================
@@ -68,6 +69,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: "Ejecutar Simulación What-If en Azure"
+        if: env.ARM_CLIENT_ID != ''
         run: |
           az deployment group what-if \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
@@ -79,7 +81,7 @@ jobs:
   # ============================================================================
   bicep-deploy:
     name: "Bicep - Deploy (Producción)"
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')
+    if: ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')) && secrets.AZURE_CLIENT_ID != ''
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -114,7 +116,7 @@ jobs:
   # ============================================================================
   bicep-decommission:
     name: "Bicep - Decomisión Controlada"
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'decommission'
+    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'decommission') && secrets.AZURE_CLIENT_ID != ''
     runs-on: ubuntu-latest
     environment: production-decommission
     steps:
