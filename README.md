@@ -181,6 +181,21 @@ az deployment group create \
   --parameters main.bicepparam
 ```
 
+### 6. Azure Portal (Manual / ClickOps)
+
+Prefer a visual, step-by-step walkthrough in the Azure Portal GUI?
+Check out the complete click-by-click operational guide:
+
+📖 **[`docs/AZURE_PORTAL_CLICKOPS_GUIDE.md`](docs/AZURE_PORTAL_CLICKOPS_GUIDE.md)**
+
+Includes exhaustive instructions covering:
+- Resource Group & ZRS Storage Account creation in Spain Central.
+- Zero-Trust security switches (TLS 1.2+, public access disabled).
+- 30-day Soft Delete, versioning, and change feed enablement.
+- `facturas` & `pedidos` containers with 2,190-day WORM retention policy.
+- 4-phase Lifecycle Management tiering rule configuration.
+- `CanNotDelete` Azure Resource Lock and test file validation.
+
 ---
 
 ## 🔒 Crucial Note on WORM Policy Locking
@@ -188,7 +203,7 @@ az deployment group create \
 > [!CAUTION]
 > **PERMANENT LEGAL LOCK IS IRREVERSIBLE**
 > 
-> By default, all 5 IaC templates deploy the 2,190-day retention policy in **Unlocked** state. This allows you to verify ingestion and integration tests safely.
+> By default, all 5 IaC templates and the portal guide deploy the 2,190-day retention policy in **Unlocked** state. This allows you to verify ingestion and integration tests safely.
 > 
 > Once you verify the deployment, you can permanently lock the policy using our dedicated tools (`lock-immutability.sh`, `Lock-ImmutabilityPolicy.ps1`, or setting `lock_immutability_policy = true`).
 > 
@@ -207,6 +222,7 @@ azure-storage-erp-compliance-iac/
 │       └── ci-lint-validate.yml        # CI pipeline validating Terraform, Bicep, Bash & PS
 ├── docs/
 │   ├── ARCHITECTURE.md                 # Detailed architecture & Mermaid diagrams
+│   ├── AZURE_PORTAL_CLICKOPS_GUIDE.md  # Click-by-click Azure Portal manual setup guide
 │   ├── COST_OPTIMIZATION.md            # Mathematical TCO model for 1 TB in Spain Central
 │   ├── LEGAL_COMPLIANCE_SPAIN.md       # Cód. Comercio, LGT, Ley Antifraude, VeriFactu, RGPD
 │   └── WORM_POLICY_LOCK_GUIDE.md       # Step-by-step WORM Unlocked vs Locked guide
