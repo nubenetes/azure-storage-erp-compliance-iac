@@ -20,7 +20,7 @@ definitions:
 
     - step: &terraform-plan
         name: "Terraform Plan (OIDC)"
-        image: hashicorp/terraform:1.9.0
+        image: hashicorp/terraform:1.10
         oidc: true
         script:
           - cd terraform

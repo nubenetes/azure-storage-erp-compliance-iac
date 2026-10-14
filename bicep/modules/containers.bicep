@@ -10,16 +10,16 @@ param retentionDays int = 2190
 @description('Allow appending new blocks without modifying historical blocks')
 param allowProtectedAppendWrites bool = true
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' existing = {
   name: storageAccountName
 }
 
-resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' existing = {
+resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' existing = {
   parent: storageAccount
   name: 'default'
 }
 
-resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = [for name in containerNames: {
+resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = [for name in containerNames: {
   parent: blobServices
   name: name
   properties: {
@@ -27,7 +27,7 @@ resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2
   }
 }]
 
-resource immutabilityPolicies 'Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies@2023-05-01' = [for (name, i) in containerNames: {
+resource immutabilityPolicies 'Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies@2024-01-01' = [for (name, i) in containerNames: {
   parent: containers[i]
   name: 'default'
   properties: {

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.48.1.52935",
+      "templateHash": "14959218658916954003"
+    }
+  },
+  "parameters": {
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the parent storage account"
+      }
+    },
+    "containerNames": {
+      "type": "array",
+      "defaultValue": [
+        "facturas",
+        "pedidos"
+      ],
+      "metadata": {
+        "description": "List of container names to provision"
+      }
+    },
+    "retentionDays": {
+      "type": "int",
+      "defaultValue": 2190,
+      "metadata": {
+        "description": "WORM retention period in days (2,190 days = 6 years Código de Comercio Art. 30)"
+      }
+    },
+    "allowProtectedAppendWrites": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Allow appending new blocks without modifying historical blocks"
+      }
+    }
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "containers",
+        "count": "[length(parameters('containerNames'))]"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]",
+      "properties": {
+        "publicAccess": "None"
+      }
+    },
+    {
+      "copy": {
+        "name": "immutabilityPolicies",
+        "count": "[length(parameters('containerNames'))]"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/{1}/{2}/{3}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()], 'default')]",
+      "properties": {
+        "immutabilityPeriodSinceCreationInDays": "[parameters('retentionDays')]",
+        "allowProtectedAppendWrites": "[parameters('allowProtectedAppendWrites')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerIds": {
+      "type": "array",
+      "copy": {
+        "count": "[length(parameters('containerNames'))]",
+        "input": "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]"
+      }
+    }
+  }
+}

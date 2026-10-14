@@ -4,9 +4,11 @@ param storageAccountName string
 @description('Azure region (defaults to Spain Central)')
 param location string = 'spaincentral'
 
+@description('Storage replication SKU')
+type skuType = 'Standard_LRS' | 'Standard_ZRS' | 'Standard_GRS' | 'Standard_GZRS'
+
 @description('Redundancy SKU')
-@allowed(['Standard_LRS', 'Standard_ZRS', 'Standard_GRS', 'Standard_GZRS'])
-param skuName string = 'Standard_ZRS'
+param skuName skuType = 'Standard_ZRS'
 
 @description('Soft delete retention in days')
 param softDeleteDays int = 30
@@ -14,7 +16,7 @@ param softDeleteDays int = 30
 @description('Resource tags')
 param tags object = {}
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
   name: storageAccountName
   location: location
   kind: 'StorageV2'
@@ -35,7 +37,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   tags: tags
 }
 
-resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' = {
   parent: storageAccount
   name: 'default'
   properties: {

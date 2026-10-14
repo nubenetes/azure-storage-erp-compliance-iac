@@ -38,7 +38,7 @@ variables:
   - name: AZURE_SERVICE_CONNECTION
     value: "sc-azure-spaincentral-oidc"
   - name: TF_VERSION
-    value: "1.9.0"
+    value: "1.10.0"
   - name: WORKING_DIR
     value: "$(System.DefaultWorkingDirectory)/terraform"
 

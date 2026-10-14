@@ -13,11 +13,11 @@ param tierToColdDays int = 365
 @description('Days before tiering to Archive')
 param tierToArchiveDays int = 1095
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' existing = {
   name: storageAccountName
 }
 
-resource managementPolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2023-05-01' = {
+resource managementPolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2024-01-01' = {
   parent: storageAccount
   name: 'default'
   properties: {

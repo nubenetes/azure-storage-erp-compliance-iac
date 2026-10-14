@@ -1,0 +1,122 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.48.1.52935",
+      "templateHash": "9473939448230836117"
+    }
+  },
+  "definitions": {
+    "skuType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_GRS",
+        "Standard_GZRS",
+        "Standard_LRS",
+        "Standard_ZRS"
+      ],
+      "metadata": {
+        "description": "Storage replication SKU"
+      }
+    }
+  },
+  "parameters": {
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage account name (3-24 lowercase alphanumerics)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "spaincentral",
+      "metadata": {
+        "description": "Azure region (defaults to Spain Central)"
+      }
+    },
+    "skuName": {
+      "$ref": "#/definitions/skuType",
+      "defaultValue": "Standard_ZRS",
+      "metadata": {
+        "description": "Redundancy SKU"
+      }
+    },
+    "softDeleteDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "Soft delete retention in days"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Resource tags"
+      }
+    }
+  },
+  "resources": {
+    "storageAccount": {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "[parameters('skuName')]"
+      },
+      "properties": {
+        "accessTier": "Hot",
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "supportsHttpsTrafficOnly": true,
+        "allowSharedKeyAccess": true,
+        "networkAcls": {
+          "bypass": "AzureServices, Logging, Metrics",
+          "defaultAction": "Allow"
+        }
+      },
+      "tags": "[parameters('tags')]"
+    },
+    "blobServices": {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+      "properties": {
+        "isVersioningEnabled": true,
+        "changeFeed": {
+          "enabled": true
+        },
+        "deleteRetentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('softDeleteDays')]"
+        },
+        "containerDeleteRetentionPolicy": {
+          "enabled": true,
+          "days": "[parameters('softDeleteDays')]"
+        }
+      },
+      "dependsOn": [
+        "storageAccount"
+      ]
+    }
+  },
+  "outputs": {
+    "id": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+    },
+    "name": {
+      "type": "string",
+      "value": "[parameters('storageAccountName')]"
+    },
+    "primaryBlobEndpoint": {
+      "type": "string",
+      "value": "[reference('storageAccount').primaryEndpoints.blob]"
+    }
+  }
+}

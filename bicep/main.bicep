@@ -1,8 +1,13 @@
 targetScope = 'resourceGroup'
 
+@description('Deployment environment')
+type environmentType = 'dev' | 'staging' | 'prod'
+
+@description('Storage replication SKU (ZRS recommended for Madrid 3-zone HA)')
+type skuType = 'Standard_LRS' | 'Standard_ZRS' | 'Standard_GRS' | 'Standard_GZRS'
+
 @description('Deployment environment: dev, staging, prod')
-@allowed(['dev', 'staging', 'prod'])
-param environment string = 'prod'
+param environment environmentType = 'prod'
 
 @description('Project identifier')
 param projectName string = 'erp'
@@ -14,8 +19,7 @@ param location string = 'spaincentral'
 param storageAccountName string = ''
 
 @description('Storage replication SKU (ZRS recommended for Madrid 3-zone HA)')
-@allowed(['Standard_LRS', 'Standard_ZRS', 'Standard_GRS', 'Standard_GZRS'])
-param skuName string = 'Standard_ZRS'
+param skuName skuType = 'Standard_ZRS'
 
 @description('WORM retention period in days (2,190 days = 6 years Código de Comercio Art. 30)')
 param retentionDays int = 2190

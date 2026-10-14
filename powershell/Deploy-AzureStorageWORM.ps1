@@ -40,6 +40,9 @@
     ./Deploy-AzureStorageWORM.ps1 -ResourceGroupName "rg-erp-prod" -SkuName "Standard_ZRS"
 #>
 
+#Requires -Version 7.2
+#Requires -Modules @{ ModuleName="Az.Accounts"; ModuleVersion="2.15.0" }, @{ ModuleName="Az.Storage"; ModuleVersion="5.11.0" }, @{ ModuleName="Az.Resources"; ModuleVersion="6.12.0" }
+
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [Parameter(Mandatory = $false)]

@@ -64,7 +64,7 @@ resource "azurerm_storage_container" "containers" {
 # 4. WORM Immutability Policy (Time-Based Retention: 2,190 days / 6 years)
 resource "azurerm_storage_container_immutability_policy" "worm_policies" {
   for_each                              = azurerm_storage_container.containers
-  storage_container_resource_manager_id = each.value.resource_manager_id
+  storage_container_resource_manager_id = each.value.id
   immutability_period_in_days           = var.immutability_retention_days
   protected_append_writes_enabled       = var.protected_append_writes_enabled
   locked                                = var.lock_immutability_policy
