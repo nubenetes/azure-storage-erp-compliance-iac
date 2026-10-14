@@ -1,5 +1,13 @@
 # Referencia de Arquitectura: Azure Blob Storage WORM y Ciclo de Vida Optimizado para ERP en España
 
+---
+
+### 🧭 Navegación de la Documentación
+| 🏠 [Inicio / README](../README.md) | 🏛️ **Arquitectura** | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 [Integración ERP](ERP_INTEGRATION_AND_REHYDRATION.md) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+---
+
 Este documento describe el anteproyecto de arquitectura para el almacenamiento y archivo legal inmutable de facturas y pedidos de ERP (hasta 1 TB y escalable) en **Azure Blob Storage** en la región **Spain Central (Madrid)**.
 
 > [!NOTE]
@@ -9,6 +17,18 @@ Este documento describe el anteproyecto de arquitectura para el almacenamiento y
 > Aunque todo el código y las plantillas han sido validados mediante pipelines de CI (Terraform, Bicep y analizadores sintácticos), **aún no han sido desplegados ni sometidos a pruebas de estrés en un entorno de producción real**.
 > 
 > **Propósito**: Actúa como **anteproyecto de arquitectura de referencia, modelo formativo y marco de decisión técnica (FinOps)** para el almacenamiento normativo de ERPs en España. Los equipos deben validar las configuraciones en un entorno de pruebas (*sandbox*) antes de aplicar bloqueos permanentes WORM en producción.
+
+---
+
+## 📑 Tabla de Contenidos
+1. [Resumen Ejecutivo y Propuesta de Valor](#resumen-ejecutivo-y-propuesta-de-valor)
+2. [Diagrama de Arquitectura](#diagrama-de-arquitectura)
+3. [Análisis Detallado de Componentes](#análisis-detallado-de-componentes)
+   * 3.1. [Base de la Cuenta de Almacenamiento](#1-base-de-la-cuenta-de-almacenamiento)
+   * 3.2. [Progresión del Ciclo de Vida (Tiering)](#2-progresión-del-ciclo-de-vida-tiering)
+   * 3.3. [Directiva de Inmutabilidad WORM](#3-directiva-de-inmutabilidad-worm-cumplimiento-y-antifraude)
+   * 3.4. [Seguridad Zero Trust y Defensa Antiransomware](#4-seguridad-zero-trust-y-defensa-antiransomware)
+4. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -137,3 +157,19 @@ Día 0                                    Día 90                Día 365       
    * **Soft Delete**: Configurado a 30 días tanto para blobs como para contenedores, permitiendo revertir borrados accidentales.
    * **Control de Versiones de Blobs**: Mantiene automáticamente el historial inalterable de versiones.
    * **Bloqueo de Gestión de Azure**: Bloqueo `CanNotDelete` aplicado a nivel de cuenta para evitar que herramientas automatizadas o cuentas comprometidas eliminen la cuenta de almacenamiento.
+
+---
+
+## 🧭 Navegación entre Módulos
+
+* 🏠 **Inicio**: [README Principal](../README.md)
+* ➡️ **Siguiente**: [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+* 📑 **Índice Completo de Documentación**:
+  1. 🏛️ **Arquitectura Técnica** (Documento actual)
+  2. ⚖️ [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+  3. 💰 [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+  4. 🔒 [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+  5. 🖱️ [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
+  6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+  7. 🔌 [Guía de Integración ERP y Rehidratación](ERP_INTEGRATION_AND_REHYDRATION.md)
+

@@ -1,6 +1,24 @@
 # Guía de Integración ERP y Rehidratación desde el Nivel Archivo
 
+---
+
+### 🧭 Navegación de la Documentación
+| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 **Integración ERP** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+---
+
 Esta guía detalla cómo los sistemas ERP empresariales (SAP, Microsoft Dynamics 365, Navision, Odoo o microservicios a medida) interactúan con la cuenta de almacenamiento inmutable WORM y gestionan la **rehidratación** de facturas históricas archivadas.
+
+---
+
+## 📑 Tabla de Contenidos
+1. [Autenticación: Modelo Zero Trust y Microsoft Entra ID (RBAC)](#1-autenticación-modelo-zero-trust-y-microsoft-entra-id-rbac)
+2. [Metadatos Recomendados y Etiquetas de Índice (Blob Index Tags)](#2-metadatos-recomendados-y-etiquetas-de-índice-blob-index-tags)
+3. [Rehidratación desde el Nivel Archivo (Archive Tier)](#3-rehidratación-desde-el-nivel-archivo-archive-tier)
+   * 3.1. [Opciones de Prioridad y Latencia de Rehidratación](#opciones-de-prioridad-y-latencia-de-rehidratación)
+   * 3.2. [Rehidratación Mediante Azure CLI](#rehidratación-mediante-azure-cli)
+4. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -70,3 +88,19 @@ az storage blob set-tier \
   --rehydrate-priority Standard \
   --auth-mode login
 ```
+
+---
+
+## 🧭 Navegación entre Módulos
+
+* ⬅️ **Anterior**: [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+* 🏠 **Inicio**: [README Principal](../README.md)
+* 📑 **Índice Completo de Documentación**:
+  1. 🏛️ [Arquitectura Técnica](ARCHITECTURE.md)
+  2. ⚖️ [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+  3. 💰 [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+  4. 🔒 [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+  5. 🖱️ [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
+  6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+  7. 🔌 **Guía de Integración ERP y Rehidratación** (Documento actual)
+

@@ -1,6 +1,28 @@
 # Análisis Financiero y Optimización de Costes: Azure Blob Storage ERP (1 TB)
 
+---
+
+### 🧭 Navegación de la Documentación
+| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 **Optimización de Costes** | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 [Integración ERP](ERP_INTEGRATION_AND_REHYDRATION.md) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+---
+
 Este documento proporciona la justificación financiera, matemática y operativa de la arquitectura de niveles de acceso (*access tiering*) en la región **Spain Central (Madrid)** en comparación con los patrones de almacenamiento tradicionales.
+
+---
+
+## 📑 Tabla de Contenidos
+1. [Comparativa de Precios Regionales (Spain Central vs. West Europe vs. North Europe)](#1-comparativa-de-precios-regionales-spain-central-vs-west-europe-vs-north-europe)
+2. [Modelo Matemático de TCO para 1 TB de Facturas y Pedidos ERP](#2-modelo-matemático-de-tco-para-1-tb-de-facturas-y-pedidos-erp)
+   * 2.1. [Hipótesis de Cálculo](#hipótesis-de-cálculo)
+   * 2.2. [Distribución de Datos en Estado Estable (Año 6)](#distribución-de-datos-en-estado-estable-año-6)
+3. [Comparativa de Costes: Tradicional 100% Hot vs. Ciclo de Vida Automatizado](#3-comparativa-de-costes-tradicional-100-hot-vs-ciclo-de-vida-automatizado)
+   * 3.1. [Escenario A: Enfoque Tradicional (100% Nivel Frecuente / Hot)](#escenario-a-enfoque-tradicional-100-nivel-frecuente--hot)
+   * 3.2. [Escenario B: Ciclo de Vida Automatizado con 4 Niveles](#escenario-b-ciclo-de-vida-automatizado-con-4-niveles-esta-arquitectura)
+4. [Resumen de Ahorro Financiero](#4-resumen-de-ahorro-financiero)
+5. [Consideraciones Operativas, Recuperación y Rehidratación de Datos](#5-consideraciones-operativas-recuperación-y-rehidratación-de-datos)
+6. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -100,3 +122,20 @@ Al diseñar una política de archivado para facturas de ERP, deben contemplarse 
    * Cold: 90 días de retención mínima.
    * Archive: 180 días de retención mínima.
    * *Nuestras reglas de ciclo de vida mueven los datos a los 90 días, 365 días y 1.095 días, superando holgadamente los límites mínimos exigidos por Azure y evitando penalizaciones por eliminación anticipada.*
+
+---
+
+## 🧭 Navegación entre Módulos
+
+* ⬅️ **Anterior**: [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+* 🏠 **Inicio**: [README Principal](../README.md)
+* ➡️ **Siguiente**: [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+* 📑 **Índice Completo de Documentación**:
+  1. 🏛️ [Arquitectura Técnica](ARCHITECTURE.md)
+  2. ⚖️ [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+  3. 💰 **Análisis Financiero y Optimización de Costes (TCO)** (Documento actual)
+  4. 🔒 [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+  5. 🖱️ [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
+  6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+  7. 🔌 [Guía de Integración ERP y Rehidratación](ERP_INTEGRATION_AND_REHYDRATION.md)
+

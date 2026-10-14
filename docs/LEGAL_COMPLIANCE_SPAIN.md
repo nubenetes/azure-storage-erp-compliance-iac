@@ -1,6 +1,27 @@
 # Marco Legal y Cumplimiento Normativo: España y Unión Europea
 
+---
+
+### 🧭 Navegación de la Documentación
+| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ **Marco Legal** | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 [Integración ERP](ERP_INTEGRATION_AND_REHYDRATION.md) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+---
+
 Este documento detalla los fundamentos jurídicos españoles y europeos que regulan la conservación de facturas electrónicas y pedidos comerciales, justificando las decisiones técnicas y de arquitectura implementadas en este repositorio.
+
+---
+
+## 📑 Tabla de Contenidos
+1. [Matriz de Mapeo Normativo y Técnico](#1-matriz-de-mapeo-normativo-y-técnico)
+2. [Análisis Detallado de la Legislación Aplicable](#2-análisis-detallado-de-la-legislación-aplicable)
+   * 2.1. [Código de Comercio (Art. 30.1)](#21-código-de-comercio-art-301)
+   * 2.2. [Ley 11/2021 de Prevención del Fraude Fiscal](#22-ley-112021-medidas-de-prevención-y-lucha-contra-el-fraude-fiscal)
+   * 2.3. [Real Decreto 1007/2023 (Reglamento VeriFactu)](#23-real-decreto-10072023-reglamento-de-sistemas-informáticos-de-facturación---verifactu)
+   * 2.4. [Residencia del Dato y RGPD en Spain Central](#24-residencia-del-dato-y-rgpd-spain-central)
+3. [Certificaciones de Azure Spain Central](#3-certificaciones-de-azure-spain-central)
+4. [Referencias Oficiales y Publicaciones en Boletines Oficiales](#4-referencias-oficiales-y-publicaciones-en-boletines-oficiales)
+5. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -77,3 +98,20 @@ Microsoft Azure opera sus centros de datos de la región Spain Central bajo los 
 7. **CCN-CERT / Esquema Nacional de Seguridad**: [Portal del Esquema Nacional de Seguridad (RD 311/2022)](https://www.ccn-cert.cni.es/ens.html).
 8. **Microsoft Learn - Almacenamiento Inmutable WORM**: [Documentación oficial de Azure Blob Storage Immutable](https://learn.microsoft.com/azure/storage/blobs/immutable-storage-overview).
 9. **Microsoft Learn - Niveles de Acceso y Precios**: [Azure Blob Storage Tiers and Lifecycle Management](https://learn.microsoft.com/azure/storage/blobs/access-tiers-overview).
+
+---
+
+## 🧭 Navegación entre Módulos
+
+* ⬅️ **Anterior**: [Referencia de Arquitectura Técnica](ARCHITECTURE.md)
+* 🏠 **Inicio**: [README Principal](../README.md)
+* ➡️ **Siguiente**: [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+* 📑 **Índice Completo de Documentación**:
+  1. 🏛️ [Arquitectura Técnica](ARCHITECTURE.md)
+  2. ⚖️ **Marco Legal y Cumplimiento Normativo (España y UE)** (Documento actual)
+  3. 💰 [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+  4. 🔒 [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+  5. 🖱️ [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
+  6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+  7. 🔌 [Guía de Integración ERP y Rehidratación](ERP_INTEGRATION_AND_REHYDRATION.md)
+

@@ -1,10 +1,31 @@
 # Guía Operativa: Directiva de Inmutabilidad WORM y Mecánica de Bloqueo Definitivo (*Policy Lock*)
 
+---
+
+### 🧭 Navegación de la Documentación
+| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 **Guía WORM Lock** | 🖱️ [Manual Portal](AZURE_PORTAL_CLICKOPS_GUIDE.md) | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 [Integración ERP](ERP_INTEGRATION_AND_REHYDRATION.md) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+---
+
 > [!CAUTION]
 > **LEA CON ATENCIÓN ANTES DE EJECUTAR UN BLOQUEO DE DIRECTIVA (*POLICY LOCK*) EN PRODUCCIÓN**
 > 
 > Una vez que una directiva de inmutabilidad en Azure Blob Storage pasa a estado **BLOQUEADA (*LOCKED*)**, la transición es **ESTRICTAMENTE IRREVERSIBLE**.
 > **Absolutamente nadie** —incluyendo el Propietario de la Suscripción (*Subscription Owner*), el Administrador Global de Microsoft Entra o el soporte técnico y de ingeniería de Microsoft Azure— posee la capacidad técnica o administrativa de anular la directiva, acortar el plazo de retención ni eliminar los contenedores o facturas protegidas hasta que haya transcurrido íntegramente el periodo configurado (por ejemplo, 2.190 días / 6 años naturales).
+
+---
+
+## 📑 Tabla de Contenidos
+1. [Ciclo de Vida de la Directiva de Inmutabilidad: Desbloqueada (Unlocked) vs. Bloqueada (Locked)](#1-ciclo-de-vida-de-la-directiva-de-inmutabilidad-desbloqueada-unlocked-vs-bloqueada-locked)
+   * 1.1. [Matriz Comparativa de Estados](#matriz-comparativa-de-estados)
+2. [Lista de Comprobación de Seguridad Previa al Bloqueo (Pre-Lock Checklist)](#2-lista-de-comprobación-de-seguridad-previa-al-bloqueo-pre-lock-checklist)
+3. [Procedimiento para Bloquear la Directiva (Lock Policy)](#3-procedimiento-para-bloquear-la-directiva-lock-policy)
+   * 3.1. [Opción A: Mediante el Script de Azure CLI Incluido](#opción-a-mediante-el-script-de-azure-cli-incluido-recomendado)
+   * 3.2. [Opción B: Mediante el Script de PowerShell](#opción-b-mediante-el-script-de-powershell)
+   * 3.3. [Opción C: Mediante Terraform](#opción-c-mediante-terraform)
+   * 3.4. [Opción D: A través del Portal de Azure](#opción-d-a-través-del-portal-de-azure-interfaz-gráfica)
+4. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -122,3 +143,20 @@ terraform apply
 4. En el apartado **Almacenamiento de blobs inmutable (*Immutable blob storage*)**, localice la directiva temporal.
 5. Haga clic en el botón de opciones `...` (*Más opciones*) $\rightarrow$ **Bloquear directiva (*Lock policy*)**.
 6. Escriba el número de confirmación requerido y confirme en el cuadro de diálogo de advertencia.
+
+---
+
+## 🧭 Navegación entre Módulos
+
+* ⬅️ **Anterior**: [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+* 🏠 **Inicio**: [README Principal](../README.md)
+* ➡️ **Siguiente**: [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
+* 📑 **Índice Completo de Documentación**:
+  1. 🏛️ [Arquitectura Técnica](ARCHITECTURE.md)
+  2. ⚖️ [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+  3. 💰 [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+  4. 🔒 **Guía Operativa del Bloqueo WORM (Policy Lock)** (Documento actual)
+  5. 🖱️ [Manual Paso a Paso en Azure Portal (ClickOps)](AZURE_PORTAL_CLICKOPS_GUIDE.md)
+  6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+  7. 🔌 [Guía de Integración ERP y Rehidratación](ERP_INTEGRATION_AND_REHYDRATION.md)
+

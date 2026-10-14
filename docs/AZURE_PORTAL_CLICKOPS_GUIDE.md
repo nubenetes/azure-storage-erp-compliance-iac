@@ -1,5 +1,13 @@
 # Guía Operativa Paso a Paso en Azure Portal (Operación Manual / ClickOps)
 
+---
+
+### 🧭 Navegación de la Documentación
+| 🏠 [Inicio / README](../README.md) | 🏛️ [Arquitectura](ARCHITECTURE.md) | ⚖️ [Marco Legal](LEGAL_COMPLIANCE_SPAIN.md) | 💰 [Optimización de Costes](COST_OPTIMIZATION.md) | 🔒 [Guía WORM Lock](WORM_POLICY_LOCK_GUIDE.md) | 🖱️ **Manual Portal** | 📊 [Auditoría & KQL](AUDITING_AND_MONITORING.md) | 🔌 [Integración ERP](ERP_INTEGRATION_AND_REHYDRATION.md) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+---
+
 Esta guía detalla minuciosamente el procedimiento manual (*ClickOps*) paso a paso a través de la interfaz gráfica del **Portal de Azure** ([portal.azure.com](https://portal.azure.com)). Se incluyen los nombres exactos tanto en **Español** como en **Inglés** de cada campo, botón y pestaña, junto con la justificación técnica, legal y financiera de cada decisión.
 
 ---
@@ -20,6 +28,8 @@ Esta guía detalla minuciosamente el procedimiento manual (*ClickOps*) paso a pa
 6. [Fase 6: Configuración de Ciclo de Vida Automatizado (Lifecycle Tiering)](#fase-6-configuración-de-ciclo-de-vida-automatizado-lifecycle-tiering)
 7. [Fase 7: Aplicación del Bloqueo de Recurso Antiransomware (`CanNotDelete`)](#fase-7-aplicación-del-bloqueo-de-recurso-antiransomware-cannotdelete)
 8. [Fase 8: Verificación Práctica de Ingesta y Bloqueo Definitivo en Producción](#fase-8-verificación-práctica-de-ingesta-y-bloqueo-definitivo-en-producción)
+9. [Resumen de Verificación Rápida](#-resumen-de-verificación-rápida)
+10. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -278,3 +288,20 @@ Impide que scripts automáticos, cuentas de servicio comprometidas o errores hum
 | **Inmutabilidad WORM** | Contenedores $\rightarrow$ Directiva de acceso | `2.190 días` + Append Writes activado |
 | **Tiering** | Administración del ciclo de vida $\rightarrow$ Reglas | 90d (Cool), 365d (Cold), 1095d (Archive) |
 | **Bloqueo Azure** | Configuración $\rightarrow$ Bloqueos | `CanNotDelete` activado |
+
+---
+
+## 🧭 Navegación entre Módulos
+
+* ⬅️ **Anterior**: [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+* 🏠 **Inicio**: [README Principal](../README.md)
+* ➡️ **Siguiente**: [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+* 📑 **Índice Completo de Documentación**:
+  1. 🏛️ [Arquitectura Técnica](ARCHITECTURE.md)
+  2. ⚖️ [Marco Legal y Cumplimiento Normativo (España y UE)](LEGAL_COMPLIANCE_SPAIN.md)
+  3. 💰 [Análisis Financiero y Optimización de Costes (TCO)](COST_OPTIMIZATION.md)
+  4. 🔒 [Guía Operativa del Bloqueo WORM (Policy Lock)](WORM_POLICY_LOCK_GUIDE.md)
+  5. 🖱️ **Manual Paso a Paso en Azure Portal (ClickOps)** (Documento actual)
+  6. 📊 [Auditoría, Monitorización y Consultas KQL](AUDITING_AND_MONITORING.md)
+  7. 🔌 [Guía de Integración ERP y Rehidratación](ERP_INTEGRATION_AND_REHYDRATION.md)
+

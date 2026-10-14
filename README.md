@@ -23,6 +23,29 @@ Este proyecto proporciona implementaciones automatizadas completas en **Terrafor
 
 ---
 
+## 📑 Tabla de Contenidos
+
+* [1. 🇪🇸 Resumen Ejecutivo](#-resumen-ejecutivo)
+* [2. 🏛️ Diagrama de Arquitectura General](#️-diagrama-de-arquitectura-general)
+* [3. 📊 Desglose Detallado de Costes (1 TB a lo largo de 6 Años)](#-desglose-detallado-de-costes-1-tb-a-lo-largo-de-6-años)
+* [4. ⚖️ Mapeo Normativo y Legal (España y Unión Europea)](#️-mapeo-normativo-y-legal-españa-y-unión-europea)
+* [5. 📚 Suite de Documentación Técnica Especializada (docs/)](#-suite-de-documentación-técnica-especializada-docs)
+* [6. 🚀 Soluciones de Infraestructura como Código (IaC)](#-soluciones-de-infraestructura-como-código-iac)
+  * [6.1. Terraform / OpenTofu](#1-terraform--opentofu)
+  * [6.2. Azure CLI](#2-azure-cli)
+  * [6.3. PowerShell (Módulo Az)](#3-powershell-módulo-az)
+  * [6.4. Ansible](#4-ansible)
+  * [6.5. Azure Bicep](#5-azure-bicep)
+  * [6.6. Azure Portal (Manual / ClickOps)](#6-azure-portal-manual--clickops)
+* [7. 🧪 Operaciones Día 2, Pruebas Automatizadas y FinOps](#-operaciones-día-2-pruebas-automatizadas-y-finops)
+* [8. 🔒 Advertencia Crítica sobre el Bloqueo de la Directiva WORM](#-advertencia-crítica-sobre-el-bloqueo-de-la-directiva-worm)
+* [9. 📂 Estructura del Repositorio](#-estructura-del-repositorio)
+* [10. 📚 Referencias Públicas y Documentación Oficial](#-referencias-públicas-y-documentación-oficial)
+* [11. 🤝 Contribuciones](#-contribuciones)
+* [12. 📜 Licencia](#-licencia)
+
+---
+
 ## 🇪🇸 Resumen Ejecutivo
 
 Para un sistema ERP en España (SAP, Microsoft Dynamics, Navision, Odoo o desarrollo propio), la arquitectura más eficiente y conforme a derecho consiste en:
@@ -115,6 +138,22 @@ flowchart TD
 | **Esquema Nacional de Seguridad (ENS)**| Certificación nivel **ALTO** para entidades reguladas y sector público. | Microsoft Azure Spain Central dispone de la certificación oficial **ENS Nivel Alto**. |
 
 * Análisis jurídico detallado disponible en [`docs/LEGAL_COMPLIANCE_SPAIN.md`](docs/LEGAL_COMPLIANCE_SPAIN.md).
+
+---
+
+## 📚 Suite de Documentación Técnica Especializada (`docs/`)
+
+Para profundizar en cada vertiente del proyecto (arquitectura, marco legal, finanzas FinOps, seguridad WORM, portal ClickOps, telemetría KQL e integración ERP), navegue a través de la suite de guías técnicas enlazadas:
+
+| Documento | Ámbito y Temática Principal | Navegación Directa |
+| :--- | :--- | :---: |
+| 🏛️ **Arquitectura Técnica** | Diagramas de componentes, topología en `spaincentral`, resiliencia ZRS de 3 zonas y reglas de ciclo de vida. | [Consultar Guía →](docs/ARCHITECTURE.md) |
+| ⚖️ **Marco Legal y Cumplimiento** | Fundamentos normativos: Código de Comercio (Art. 30), LGT (Arts. 66 y 66 bis), Ley Antifraude 11/2021, VeriFactu y RGPD. | [Consultar Guía →](docs/LEGAL_COMPLIANCE_SPAIN.md) |
+| 💰 **Optimización de Costes (TCO)** | Justificación matemática y financiera del ahorro del ~71% – 76% (Hot $\rightarrow$ Cool $\rightarrow$ Cold $\rightarrow$ Archive). | [Consultar Guía →](docs/COST_OPTIMIZATION.md) |
+| 🔒 **Guía Operativa del Bloqueo WORM** | Mecánica de inmutabilidad irreversible, estados *Unlocked* vs *Locked*, lista de control previa y comandos de bloqueo. | [Consultar Guía →](docs/WORM_POLICY_LOCK_GUIDE.md) |
+| 🖱️ **Manual en Azure Portal (ClickOps)** | Manual paso a paso en 8 fases a través de la interfaz web gráfica del Portal de Azure con nombres en español e inglés. | [Consultar Guía →](docs/AZURE_PORTAL_CLICKOPS_GUIDE.md) |
+| 📊 **Auditoría, Monitorización y KQL** | Configuración de diagnósticos a Log Analytics Workspace y 4 consultas KQL para inspecciones tributarias y RGPD. | [Consultar Guía →](docs/AUDITING_AND_MONITORING.md) |
+| 🔌 **Integración ERP y Rehidratación** | Autenticación Zero Trust mediante Entra ID RBAC, etiquetas de índice (*Blob Index Tags*) y rehidratación desde Archive. | [Consultar Guía →](docs/ERP_INTEGRATION_AND_REHYDRATION.md) |
 
 ---
 
