@@ -28,7 +28,12 @@ Este documento describe el anteproyecto de arquitectura para el almacenamiento y
    * 3.2. [Progresión del Ciclo de Vida (Tiering)](#2-progresión-del-ciclo-de-vida-tiering)
    * 3.3. [Directiva de Inmutabilidad WORM](#3-directiva-de-inmutabilidad-worm-cumplimiento-y-antifraude)
    * 3.4. [Seguridad Zero Trust y Defensa Antiransomware](#4-seguridad-zero-trust-y-defensa-antiransomware)
-4. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
+4. [Las 3 Soluciones Arquitectónicas para ERP en España](#4-las-3-soluciones-arquitectónicas-para-erp-en-españa-comparativa-exhaustiva-e-implementación)
+   * 4.1. [Arquitectura 1: Mínimo Coste TCO con Archive WORM (Standard_LRS)](#41-arquitectura-1-mínimo-coste-tco-con-archive-worm-standard_lrs)
+   * 4.2. [Arquitectura 2: Máxima Resiliencia Multi-Zona con Cold WORM (Standard_ZRS)](#42-arquitectura-2-máxima-resiliencia-multi-zona-con-cold-worm-standard_zrs)
+   * 4.3. [Arquitectura 3: Modelo Enterprise Desacoplado Dual (ZRS Operativo + LRS Histórico)](#43-arquitectura-3-modelo-enterprise-desacoplado-dual-zrs-operativo--lrs-histórico)
+   * 4.4. [Matriz Comparativa y Criterios de Selección para el Decisor Técnico](#44-matriz-comparativa-y-criterios-de-selección-para-el-decisor-técnico)
+5. [Navegación entre Módulos de Documentación](#-navegación-entre-módulos)
 
 ---
 
@@ -165,6 +170,151 @@ Día 0                                    Día 90                Día 365       
    * **Soft Delete**: Configurado a 30 días tanto para blobs como para contenedores, permitiendo revertir borrados accidentales.
    * **Control de Versiones de Blobs**: Mantiene automáticamente el historial inalterable de versiones.
    * **Bloqueo de Gestión de Azure**: Bloqueo `CanNotDelete` aplicado a nivel de cuenta para evitar que herramientas automatizadas o cuentas comprometidas eliminen la cuenta de almacenamiento.
+
+---
+
+## 4. Las 3 Soluciones Arquitectónicas para ERP en España: Comparativa Exhaustiva e Implementación
+
+Debido a la limitación técnica de Microsoft Azure donde **el nivel Archive no está soportado en cuentas con redundancia ZRS, GZRS ni RA-GZRS**, existen tres patrones de arquitectura plenamente válidos para sistemas ERP sujetos a la legislación española (Código de Comercio Art. 30, Ley 11/2021 Antifraude y RD 1007/2023 VeriFactu):
+
+```mermaid
+flowchart TD
+    subgraph Sol1["🏛️ Arquitectura 1: Mínimo Coste TCO (Standard_LRS)"]
+        direction TB
+        A1["Cuenta Única: Standard_LRS (1 Datacenter Madrid)"]
+        A1_Life["Ciclo 4 Fases: Hot (90d) → Cool (365d) → Cold (3a) → Archive (6a)"]
+        A1_WORM["WORM 2.190 días (6 años) Activo en las 4 Fases"]
+        A1_Cost["Coste: ~4,37 €/mes por TB | Ahorro: 76,8%"]
+        A1_SLA["SLA Lectura: 99,9% | Rehidratación: 3 a 15h (~3,33 €/100GB)"]
+    end
+
+    subgraph Sol2["🛡️ Arquitectura 2: Máxima Resiliencia 3 Zonas (Standard_ZRS)"]
+        direction TB
+        B1["Cuenta Única: Standard_ZRS (3 Zonas de Disponibilidad Madrid)"]
+        B1_Life["Ciclo 3 Fases Online: Hot (90d) → Cool (365d) → Cold (1 a 6 años)"]
+        B1_WORM["WORM 2.190 días (6 años) Distribuido en las 3 Zonas"]
+        B1_Cost["Coste: ~7,70 €/mes por TB | Ahorro: 67,1%"]
+        B1_SLA["SLA Lectura: 99,99% | Online Inmediato (<10 ms) | 0 € Rehidratación"]
+    end
+
+    subgraph Sol3["⚡ Arquitectura 3: Modelo Enterprise Desacoplado Dual"]
+        direction TB
+        C1["Cuenta Primaria Operativa: Standard_ZRS (Madrid 3 Zonas)"]
+        C1_Life["Años 0 a 3: Hot y Cool (Alta Disponibilidad ERP)"]
+        C2["Cuenta Histórica de Archivo: Standard_LRS (Madrid)"]
+        C2_Life["Años 3 a 6: Archive + WORM Legal (0,00099 €/GB/m)"]
+        C_Pipeline["Pipeline Automático de Volcado (Event Grid / Data Factory / azcopy)"]
+        C1 -->|A los 3 años| C_Pipeline --> C2
+        C_Cost["Coste Ponderado: ~5,30 €/mes por TB | Ahorro: 73,5%"]
+    end
+```
+
+---
+
+### 4.1. Arquitectura 1: Mínimo Coste TCO con Archive WORM (`Standard_LRS`)
+
+#### Concepto y Justificación
+Es la solución de referencia para organizaciones cuyo mandato estratégico primordial es la **eficiencia financiera (FinOps)** y el mínimo coste operativo, y cuyos procedimientos de auditoría tributaria admiten ventanas de respuesta de varias horas para facturas de ejercicios fiscales antiguos.
+
+#### Características Técnicas
+* **Topología**: Cuenta única `StorageV2` en la región `spaincentral` (Madrid) con redundancia local `Standard_LRS` (3 copias síncronas en el mismo centro de datos).
+* **Ciclo de Vida (4 Fases Automatizadas)**:
+  1. **Hot (Días 0 – 90)**: Facturas y pedidos en curso. Rendimiento óptimo, consultas directas del ERP.
+  2. **Cool (Días 91 – 365)**: Facturas del año fiscal cerrado o en liquidación. ~46% de ahorro en almacenamiento.
+  3. **Cold (Días 366 – 1.095 / Años 1 a 3)**: Facturas dentro del plazo de inspección fiscal ordinario. ~76% de ahorro.
+  4. **Archive (Días 1.096 – 2.190+ / Años 3 a 6+)**: Custodia legal mercantil obligatoria según el Art. 30 del Código de Comercio. Almacenamiento en cintas/medios *offline* a ~0,00099 €/GB/mes (~95% de ahorro).
+* **Inmutabilidad WORM**: Directiva de retención de 2.190 días bloqueada permanentemente. La directiva sigue protegiendo los blobs en el nivel *Archive* (Azure prohíbe el borrado de blobs inmutables archivados).
+* **Durabilidad y SLA**: Durabilidad del 99,999999999% anual (11 nueves). SLA de disponibilidad de lectura en Hot/Cool del 99,9%.
+* **Coste Mensual Estable (1 TB)**: **~4,37 € / mes** (~52,44 € al año; ~314,64 € en 6 años). Representa un ahorro del 76,8% frente a mantener todo en Hot LRS.
+* **Procedimiento Operativo ante Inspección de la AEAT**:
+  * Si la Agencia Tributaria notifica una inspección sobre el ejercicio de hace 4 años, se solicita la rehidratación del lote de facturas (ej. 100 GB / ~20.000 facturas) a nivel *Cool*.
+  * En **Prioridad Estándar**, el lote está disponible en 3 a 15 horas con un coste total de **~3,33 €**.
+  * En **Alta Prioridad**, el lote está disponible en menos de 1 hora con un coste total de **~5,77 €** (50 GB).
+* **Configuración en IaC**:
+  * **Terraform**: `account_replication_type = "LRS"`, `tier_to_archive_days = 1095`.
+  * **Bicep**: `skuName = 'Standard_LRS'` (activa automáticamente `enableArchiveTier = true`).
+
+---
+
+### 4.2. Arquitectura 2: Máxima Resiliencia Multi-Zona con Cold WORM (`Standard_ZRS`)
+
+#### Concepto y Justificación
+Diseñada para empresas corporativas, entidades reguladas y multinacionales que exigen **máxima resiliencia física frente a desastres** (capacidad de tolerar la caída completa de un centro de datos en la Comunidad de Madrid) y **acceso inmediato en milisegundos a cualquier factura histórica**, eliminando por completo los tiempos de espera y las tasas de rehidratación.
+
+#### Características Técnicas
+* **Topología**: Cuenta única `StorageV2` en la región `spaincentral` (Madrid) con redundancia de zona `Standard_ZRS` (datos replicados sincrónicamente en 3 zonas de disponibilidad físicas independientes separadas por kilómetros).
+* **Ciclo de Vida (3 Fases Online)**:
+  1. **Hot (Días 0 – 90)**: Facturas recientes y operaciones activas de facturación.
+  2. **Cool (Días 91 – 365)**: Facturas del año contable.
+  3. **Cold (Días 366 – 2.190 / Años 1 a 6)**: Custodia fiscal y mercantil durante el resto de la vida legal. **Se omite el nivel Archive**, manteniendo los datos en el nivel *Cold* en línea distribuido en las 3 zonas.
+* **Inmutabilidad WORM**: Directiva de retención de 2.190 días bloqueada en las 3 zonas de disponibilidad simultáneamente.
+* **Durabilidad y SLA**: Durabilidad del 99,9999999999% anual (12 nueves). SLA de disponibilidad de lectura del 99,99%.
+* **Coste Mensual Estable (1 TB)**: **~7,70 € / mes** (~92,40 € al año; ~554,40 € en 6 años). Proporciona un ahorro del 67,1% frente a los 23,40 €/mes de Hot ZRS.
+* **Ventajas Operativas Críticas**:
+  1. **Acceso Online Inmediato (< 10 ms)**: Cualquier auditoría de la AEAT, peritaje judicial o comprobación de garantía se responde al instante en milisegundos.
+  2. **Cero Costes de Rehidratación**: El coste de recuperación ante auditorías es estrictamente **0,00 €**.
+  3. **Cero Complejidad**: No requiere flujos asíncronos en el ERP para comprobar si un blob archivado ya se ha descongelado.
+* **Configuración en IaC**:
+  * **Terraform**: `account_replication_type = "ZRS"` (la plantilla detecta el SKU ZRS y omite `tier_to_archive` para evitar el error `InvalidTierForRedundancyType`).
+  * **Bicep**: `skuName = 'Standard_ZRS'` (establece automáticamente `enableArchiveTier = false`).
+
+---
+
+### 4.3. Arquitectura 3: Modelo Enterprise Desacoplado Dual (*Dual-Account Tiering*)
+
+#### Concepto y Justificación
+Resuelve el dilema de ingeniería para grandes corporaciones que buscan simultáneamente:
+1. **Resiliencia multi-zona (ZRS)** para los ejercicios fiscales vivos (años 0 a 3) donde el volumen de consultas y modificaciones es frecuente.
+2. **Coste ultra-reducido de Archive (~0,00099 €/GB/mes)** para el repositorio legal pasivo de facturas históricas (años 3 a 6).
+
+#### Topología y Componentes
+* **Cuenta Primaria Operativa (`Standard_ZRS`)**:
+  * Nombre representativo: `sterpprodmadridzrs`.
+  * Redundancia: `Standard_ZRS` (3 AZs en Spain Central).
+  * Niveles activos: *Hot* (días 0-90) $\rightarrow$ *Cool* (días 91-1095).
+  * Directiva WORM: Retención de 1.095 días (3 años) bloqueada.
+* **Cuenta Secundaria de Archivo Histórico (`Standard_LRS`)**:
+  * Nombre representativo: `sterpprodmadridarchive`.
+  * Redundancia: `Standard_LRS` (Spain Central).
+  * Nivel de destino: *Archive* directo.
+  * Directiva WORM: Retención de 1.095 días (años 3 a 6) bloqueada.
+* **Mecanismo de Desacoplamiento y Sincronización**:
+  * Una tarea programada o un desencadenador de **Azure Event Grid** con **Azure Logic Apps** o **Azure Data Factory** ejecuta una sincronización automatizada al cierre de cada ejercicio contable.
+  * Copia segura con autenticación basada en identidades administradas (*Managed Identity*) y `azcopy`:
+    ```bash
+    azcopy copy \
+      "https://sterpprodmadridzrs.blob.core.windows.net/facturas/*" \
+      "https://sterpprodmadridarchive.blob.core.windows.net/facturas-historico/*" \
+      --block-blob-tier=Archive \
+      --trusted-microsoft-suffixes=blob.core.windows.net
+    ```
+  * Tras verificar la integridad del blob copiado en la cuenta de archivo y su bloqueo WORM legal, el blob en la cuenta primaria expira de forma segura tras completar su retención de 3 años.
+* **Coste Ponderado Mensual (1 TB)**: **~5,30 € / mes** (~63,60 € al año; ~381,60 € en 6 años). Ahorro neto del 73,5%.
+
+---
+
+### 4.4. Matriz Comparativa y Criterios de Selección para el Decisor Técnico
+
+| Criterio de Decisión / Métrica | Opción 1: Mínimo TCO (LRS 4 Niveles) | Opción 2: Máxima Resiliencia (ZRS 3 Niveles) | Opción 3: Modelo Enterprise Dual |
+| :--- | :---: | :---: | :---: |
+| **SKU de Redundancia Azure** | `Standard_LRS` | `Standard_ZRS` | `Standard_ZRS` + `Standard_LRS` |
+| **Zonas de Disponibilidad en Madrid** | 1 centro de datos (3 copias) | **3 Zonas Físicas Independientes** | 3 Zonas (años 0-3) / 1 Zona (años 3-6) |
+| **Durabilidad Anual del Dato** | 99,999999999% (11 nueves) | **99,9999999999% (12 nueves)** | 12 nueves (vivos) / 11 nueves (archivo) |
+| **SLA de Disponibilidad de Lectura** | 99,9% | **99,99%** | 99,99% (vivos) / 99,9% (archivo) |
+| **Niveles de Almacenamiento Usados** | Hot $\rightarrow$ Cool $\rightarrow$ Cold $\rightarrow$ **Archive** | Hot $\rightarrow$ Cool $\rightarrow$ **Cold (1-6a)** | Hot/Cool (ZRS) + **Archive (LRS)** |
+| **Factura Mensual (1 TB en Régimen)**| **~4,37 € / mes** | **~7,70 € / mes** | **~5,30 € / mes** |
+| **Factura Anual (1 TB)** | **~52,44 € / año** | **~92,40 € / año** | **~63,60 € / año** |
+| **TCO Acumulado a 6 Años (1 TB)** | **~314,64 €** | **~554,40 €** | **~381,60 €** |
+| **Ahorro vs. Enfoque Tradicional Todo-Hot**| **76,8% de reducción** | **67,1% de reducción** | **73,5% de reducción** |
+| **Tiempo de Acceso a Facturas de >3 Años**| 3 a 15 horas (Rehidratación) | **Inmediato (< 10 ms)** | 3 a 15 horas (Rehidratación) |
+| **Coste de Recuperación ante Inspección AEAT**| ~3,33 € por 100 GB | **0,00 € (Sin costes de rehidratación)** | ~3,33 € por 100 GB |
+| **Complejidad de Despliegue y Operación**| 🟢 Mínima (1 cuenta de storage) | 🟢 Mínima (1 cuenta de storage) | 🟡 Media (2 cuentas + pipeline de copia) |
+| **Idoneidad Estratégica** | PYMEs, medianas empresas y proyectos donde optimizar costes es la prioridad #1. | Grandes empresas, banca, seguros, y sistemas ERP con SLA estricto de auditoría inmediata. | Corporaciones multinacionales con gran volumen (>10 TB) que requieren ZRS y Archive. |
+
+> [!TIP]
+> **Recomendación para la Mayoría de Entornos ERP**:
+> * **Para Entornos de Producción Estándar**: Se recomienda la **Opción 2 (`Standard_ZRS`)**, ya que por una diferencia de apenas **~3,33 €/mes por TB** garantiza tolerancia a desastres en Madrid y elimina cualquier coste o tiempo de espera ante auditorías tributarias.
+> * **Para Archivo Histórico Masivo (> 5 TB)**: Se recomienda la **Opción 1 (`Standard_LRS`)**, maximizando el ahorro FinOps con el nivel Archive.
 
 ---
 

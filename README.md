@@ -27,6 +27,7 @@ Este proyecto proporciona implementaciones automatizadas completas en **Terrafor
 
 * [1. 🇪🇸 Resumen Ejecutivo](#-resumen-ejecutivo)
 * [2. 🏛️ Diagrama de Arquitectura General](#️-diagrama-de-arquitectura-general)
+  * [2.1. 🏛️ Las 3 Soluciones Arquitectónicas para ERP en España](#️-las-3-soluciones-arquitectónicas-para-erp-en-españa)
 * [3. 📊 Desglose Detallado de Costes (1 TB a lo largo de 6 Años)](#-desglose-detallado-de-costes-1-tb-a-lo-largo-de-6-años)
 * [4. ⚖️ Mapeo Normativo y Legal (España y Unión Europea)](#️-mapeo-normativo-y-legal-españa-y-unión-europea)
 * [5. 📚 Suite de Documentación Técnica Especializada (docs/)](#-suite-de-documentación-técnica-especializada-docs)
@@ -108,6 +109,18 @@ flowchart TD
     Auditor -->|"Consulta Online"| Cold
     Auditor -.->|"Rehidratación en horas"| Archive
 ```
+
+### 🏛️ Las 3 Soluciones Arquitectónicas para ERP en España
+
+Debido a que **el nivel Archive no está soportado en cuentas con redundancia ZRS en Azure**, esta solución proporciona 3 patrones de implementación según las prioridades del negocio:
+
+| Solución / Patrón | Redundancia | Progresión de Niveles | Coste (1 TB) | Ventaja Diferencial | Cuándo Elegirla |
+| :--- | :---: | :--- | :---: | :--- | :--- |
+| **1. Mínimo Coste TCO (Archive WORM)** | `Standard_LRS` | Hot $\rightarrow$ Cool $\rightarrow$ Cold $\rightarrow$ **Archive** | **~4,37 € / mes** | **Máximo ahorro FinOps (76,8%)** con custodia a céntimos en cinta offline. | Empresas donde optimizar costes es la prioridad #1. Rehidratación en 3-15h (~3,33 €/100 GB). |
+| **2. Máxima Resiliencia 3 Zonas (Cold WORM)** | `Standard_ZRS` | Hot $\rightarrow$ Cool $\rightarrow$ **Cold (1-6 años)** | **~7,70 € / mes** | **100% online inmediato (<10 ms)**, tolerancia a caída de centro de datos, **0 € rehidratación**. | Entornos de producción de misión crítica, banca, y requerimientos de inspección inmediata. |
+| **3. Modelo Enterprise Desacoplado Dual** | `Standard_ZRS` + `Standard_LRS` | Años 0-3 en ZRS (Hot/Cool)<br/>Años 3-6 en LRS (Archive) | **~5,30 € / mes** | **Lo mejor de ambos mundos**: 3 zonas para años activos y Archive ultra-barato para histórico. | Corporaciones con altos volúmenes (>10 TB) con script de sincronización [`sync-dual-account-archive.sh`](scripts/sync-dual-account-archive.sh). |
+
+> 📖 **Documentación Técnica Completa**: Consulte el desglose detallado, diagramas de flujo y matrices de decisión en [**`docs/ARCHITECTURE.md` (Sección 4)**](docs/ARCHITECTURE.md#4-las-3-soluciones-arquitectónicas-para-erp-en-españa-comparativa-exhaustiva-e-implementación).
 
 ---
 
@@ -398,7 +411,8 @@ azure-storage-erp-compliance-iac/
 ├── scripts/
 │   ├── test-worm-compliance.sh         # Suite automatizada de pruebas de cumplimiento (Bash)
 │   ├── Test-WORMCompliance.ps1         # Suite automatizada de pruebas de cumplimiento (PowerShell)
-│   └── calculate-erp-storage-tco.py    # Calculador CLI interactivo de costes FinOps
+│   ├── calculate-erp-storage-tco.py    # Calculador CLI interactivo de costes FinOps
+│   └── sync-dual-account-archive.sh    # Sincronización enterprise ZRS -> LRS Archive (Solución 3)
 ├── examples/
 │   ├── python/upload_verifactu_invoice.py # Ejemplo en Python con Entra ID y etiquetas VeriFactu
 │   ├── csharp/InvoiceStorageService.cs     # Servicio empresarial en C# / .NET 8 para ERPs
