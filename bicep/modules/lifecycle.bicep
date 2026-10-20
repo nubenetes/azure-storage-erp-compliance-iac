@@ -13,8 +13,68 @@ param tierToColdDays int = 365
 @description('Days before tiering to Archive')
 param tierToArchiveDays int = 1095
 
+@description('Enable transition to Archive tier (not supported by Azure on ZRS/GZRS redundancy SKUs)')
+param enableArchiveTier bool = false
+
 resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' existing = {
   name: storageAccountName
+}
+
+var baseBlobActions = enableArchiveTier ? {
+  tierToCool: {
+    daysAfterModificationGreaterThan: tierToCoolDays
+  }
+  tierToCold: {
+    daysAfterModificationGreaterThan: tierToColdDays
+  }
+  tierToArchive: {
+    daysAfterModificationGreaterThan: tierToArchiveDays
+  }
+} : {
+  tierToCool: {
+    daysAfterModificationGreaterThan: tierToCoolDays
+  }
+  tierToCold: {
+    daysAfterModificationGreaterThan: tierToColdDays
+  }
+}
+
+var snapshotActions = enableArchiveTier ? {
+  tierToCool: {
+    daysAfterCreationGreaterThan: tierToCoolDays
+  }
+  tierToCold: {
+    daysAfterCreationGreaterThan: tierToColdDays
+  }
+  tierToArchive: {
+    daysAfterCreationGreaterThan: tierToArchiveDays
+  }
+} : {
+  tierToCool: {
+    daysAfterCreationGreaterThan: tierToCoolDays
+  }
+  tierToCold: {
+    daysAfterCreationGreaterThan: tierToColdDays
+  }
+}
+
+var versionActions = enableArchiveTier ? {
+  tierToCool: {
+    daysAfterCreationGreaterThan: tierToCoolDays
+  }
+  tierToCold: {
+    daysAfterCreationGreaterThan: tierToColdDays
+  }
+  tierToArchive: {
+    daysAfterCreationGreaterThan: tierToArchiveDays
+  }
+} : {
+  tierToCool: {
+    daysAfterCreationGreaterThan: tierToCoolDays
+  }
+  tierToCold: {
+    daysAfterCreationGreaterThan: tierToColdDays
+  }
 }
 
 resource managementPolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2024-01-01' = {
@@ -35,39 +95,9 @@ resource managementPolicy 'Microsoft.Storage/storageAccounts/managementPolicies@
               prefixMatch: prefixMatches
             }
             actions: {
-              baseBlob: {
-                tierToCool: {
-                  daysAfterModificationGreaterThan: tierToCoolDays
-                }
-                tierToCold: {
-                  daysAfterModificationGreaterThan: tierToColdDays
-                }
-                tierToArchive: {
-                  daysAfterModificationGreaterThan: tierToArchiveDays
-                }
-              }
-              snapshot: {
-                tierToCool: {
-                  daysAfterCreationGreaterThan: tierToCoolDays
-                }
-                tierToCold: {
-                  daysAfterCreationGreaterThan: tierToColdDays
-                }
-                tierToArchive: {
-                  daysAfterCreationGreaterThan: tierToArchiveDays
-                }
-              }
-              version: {
-                tierToCool: {
-                  daysAfterCreationGreaterThan: tierToCoolDays
-                }
-                tierToCold: {
-                  daysAfterCreationGreaterThan: tierToColdDays
-                }
-                tierToArchive: {
-                  daysAfterCreationGreaterThan: tierToArchiveDays
-                }
-              }
+              baseBlob: baseBlobActions
+              snapshot: snapshotActions
+              version: versionActions
             }
           }
         }

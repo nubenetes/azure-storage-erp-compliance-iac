@@ -60,7 +60,7 @@ Para un sistema ERP en España (SAP, Microsoft Dynamics, Navision, Odoo o desarr
 3. **Inmutabilidad WORM Legal**: Directiva de retención basada en tiempo de **2.190 días (6 años)** con soporte para anexar registros protegidos (`allowProtectedAppendWrites = true`), garantizando la inalterabilidad exigida por la **Ley Antifraude 11/2021** y el **Reglamento VeriFactu (RD 1007/2023)**.
 4. **Resiliencia y Antiransomware**: Eliminación temporal (*Soft Delete*) de 30 días para blobs y contenedores, versionado de blobs y bloqueo de recurso de Azure de tipo `CanNotDelete`.
 
-> 💡 **Impacto Financiero**: Esta arquitectura reduce el coste de almacenar 1 TB de unos **19,00 €/mes** en Hot Tier a tan solo **~4,37 €/mes (LRS)** o **~5,43 €/mes (ZRS con 3 zonas de disponibilidad)**, logrando un **ahorro recurrente superior al 75%** y garantizando el cumplimiento normativo mercantil y fiscal en España.
+> 💡 **Impacto Financiero**: Esta arquitectura reduce el coste de almacenar 1 TB de unos **19,00 €/mes** en Hot Tier a tan solo **~4,37 €/mes (LRS con Archive)** o **~7,70 €/mes (ZRS distribuido en 3 zonas de disponibilidad físicas con Cold online)**, logrando un **ahorro recurrente de hasta el 76,8%** y garantizando el cumplimiento normativo mercantil y fiscal en España. *(Nota: el nivel Archive no está soportado en ZRS por diseño de Azure, por lo que en ZRS los datos históricos se conservan en Cold en línea a milisegundos sin coste de rehidratación)*.
 
 ---
 
@@ -113,18 +113,18 @@ flowchart TD
 
 ## 📊 Desglose Detallado de Costes (1 TB a lo largo de 6 Años)
 
-| Nivel de Acceso / Fase | Periodo de Custodia | Volumen Efectivo | Tarifa LRS (€/GB/mes) | Tarifa ZRS (€/GB/mes) | Coste Mensual (LRS) | Coste Mensual (ZRS) |
+| Nivel de Acceso / Fase | Periodo de Custodia | Volumen Efectivo | Tarifa LRS (€/GB/mes) | Tarifa ZRS (€/GB/mes) | Coste Mensual (LRS - 4 Niveles) | Coste Mensual (ZRS - 3 Niveles) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Hot** (Facturación reciente) | Días 0 – 90 | 41,67 GB | 0,0184 € | 0,0230 € | 0,77 € | 0,96 € |
 | **Cool** (Ejercicio fiscal) | Días 91 – 365 | 125,00 GB | 0,0100 € | 0,0125 € | 1,25 € | 1,56 € |
-| **Cold** (Histórico contable) | Años 1 – 3 | 333,33 GB | 0,0045 € | 0,0058 € | 1,50 € | 1,93 € |
-| **Archive** (Custodia legal) | Años 3 – 6 | 500,00 GB | 0,00099 € | 0,00125 € | 0,50 € | 0,63 € |
+| **Cold** (Histórico contable) | Años 1 – 3 (LRS) / 1 – 6 (ZRS) | 333,33 GB (LRS) / 833,33 GB (ZRS) | 0,0045 € | 0,0058 € | 1,50 € | 4,83 € |
+| **Archive** (Custodia legal) | Años 3 – 6 | 500,00 GB (LRS) / N/A (ZRS) | 0,00099 € | *No soportado en ZRS* | 0,50 € | 0,00 € |
 | Operaciones y transiciones | Continuo | ~14 GB/mes nuevo | - | - | ~0,35 € | ~0,35 € |
-| **Coste Total en Régimen Estable** | **1.000 GB (1 TB)** | **100% de los datos** | - | - | **~4,37 € / mes** | **~5,43 € / mes** |
+| **Coste Total en Régimen Estable** | **1.000 GB (1 TB)** | **100% de los datos** | - | - | **~4,37 € / mes** | **~7,70 € / mes** |
 
 * Coste tradicional manteniendo todo en Hot: **~18,80 € / mes (LRS)** o **~23,40 € / mes (ZRS)**.
-* **Ahorro acumulado a 6 años**: **~1.038,96 € ahorrados por cada TB** (> 75% de ahorro neto).
-* **Coste de Rehidratación ante Inspección / Auditoría**: Tan solo **~3,33 € por cada lote de 100 GB** (~20.000 facturas) en prioridad estándar (3-15h) o **~5,77 € por 50 GB** en alta prioridad (<1h), preservando un ahorro neto de decenas de euros por lote.
+* **Ahorro acumulado a 6 años**: **~1.038,96 € ahorrados en LRS** (> 76% de ahorro) y **~1.130,40 € ahorrados en ZRS** (> 67% de ahorro con 3 AZs en Madrid y 100% online).
+* **Coste de Rehidratación ante Inspección / Auditoría**: En LRS, tan solo **~3,33 € por cada lote de 100 GB** (~20.000 facturas) en prioridad estándar (3-15h) o **~5,77 € por 50 GB** en alta prioridad (<1h). En ZRS, **0,00 € de coste de rehidratación y 0 horas de espera**, ya que los datos residen en el nivel *Cold* en línea con acceso inmediato en milisegundos.
 * Modelado financiero exhaustivo y 4 ejemplos numéricos disponibles en [`docs/COST_OPTIMIZATION.md`](docs/COST_OPTIMIZATION.md#5-análisis-detallado-de-costes-de-rehidratación-y-ejemplos-prácticos).
 
 ---

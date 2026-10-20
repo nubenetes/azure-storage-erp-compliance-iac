@@ -51,9 +51,18 @@ Precios oficiales de referencia en Euros (€) para cuentas *Standard General Pu
 | **Frecuente / Hot (LRS)** | ~0,0184 € / GB / mes | ~0,0184 € / GB / mes | ~0,0184 € / GB / mes | Mismo precio de lista |
 | **Frecuente / Hot (ZRS)** | ~0,0230 € / GB / mes | ~0,0230 € / GB / mes | ~0,0230 € / GB / mes | Redundancia de zona (3 AZs en Madrid) |
 | **Esporádico / Cool (LRS)** | ~0,0100 € / GB / mes | ~0,0100 € / GB / mes | ~0,0100 € / GB / mes | **~46% de ahorro** |
-| **Frío / Cold (LRS)** | ~0,0045 € / GB / mes | ~0,0045 € / GB / mes | ~0,0045 € / GB / mes | **~76% de ahorro** |
-| **Archivo / Archive (LRS)**| ~0,00099 € / GB / mes| ~0,00099 € / GB / mes| ~0,00099 € / GB / mes| **~95% de ahorro** |
+| **Frío / Cold (LRS)** | ~0,0045 € / GB / mes | ~0,0045 € / GB / mes | ~0,0045 € / GB / mes | **~76% de ahorro** (acceso online ms) |
+| **Frío / Cold (ZRS)** | ~0,0058 € / GB / mes | ~0,0058 € / GB / mes | ~0,0058 € / GB / mes | 3 zonas de disponibilidad en Madrid |
+| **Archivo / Archive (Solo LRS/GRS)**| ~0,00099 € / GB / mes| ~0,00099 € / GB / mes| ~0,00099 € / GB / mes| **~95% de ahorro** (No soportado en ZRS) |
 | **Salida de Red (España)** | **< 10 ms (intra-país)** | 30-45 ms (transfronterizo) | 35-50 ms (transfronterizo) | Cero penalización de latencia, enrutamiento local |
+
+> [!IMPORTANT]
+> **Incompatibilidad Técnica Oficial de Azure: Archive Tier y ZRS**:
+> Según la especificación oficial de Azure Blob Storage, **el nivel Archive NO está soportado en cuentas con redundancia ZRS (*Zone-Redundant Storage*), GZRS ni RA-GZRS**. Archive solo se admite en cuentas **LRS, GRS y RA-GRS**.
+> 
+> * En cuentas **`Standard_LRS`**, se implementa el ciclo completo de **4 niveles** (*Hot* $\rightarrow$ *Cool* $\rightarrow$ *Cold* $\rightarrow$ *Archive*) alcanzando el coste mínimo de **~4,37 €/mes por TB**.
+> * En cuentas **`Standard_ZRS`**, el ciclo de vida se optimiza con **3 niveles online** (*Hot* $\rightarrow$ *Cool* $\rightarrow$ *Cold* hasta los 6 años) a **~7,70 €/mes por TB**, eliminando por completo los tiempos de espera y los costes de rehidratación al permanecer siempre en línea con latencia de milisegundos.
+> * Las empresas que requieran simultáneamente 3 zonas para facturación activa y Archive ultra-económico para custodia histórica utilizan el **Patrón Desacoplado Dual**: cuenta primaria en ZRS (años 0-3) y cuenta de réplica secundaria en LRS (años 3-6).
 
 > [!NOTE]
 > Microsoft Azure factura exactamente el mismo precio base de almacenamiento en **Spain Central (Madrid)** que en Ámsterdam o Dublín. Elegir Spain Central aporta ventajas directas en latencia, cumplimiento de soberanía de datos y ningún sobrecoste por región.
@@ -93,32 +102,39 @@ La totalidad del terabyte (1.000 GB) permanece en el nivel *Hot* de forma indefi
 
 ---
 
-### Escenario B: Ciclo de Vida Automatizado con 4 Niveles (Esta Arquitectura)
-Los datos transicionan automáticamente: *Hot* $\rightarrow$ *Cool* $\rightarrow$ *Cold* $\rightarrow$ *Archive*.
+### Escenario B: Ciclo de Vida Automatizado (Comparativa LRS 4 Niveles vs. ZRS 3 Niveles)
 
-| Nivel / Componente | Volumen de Datos | Tarifa LRS (€/GB/mes) | Tarifa ZRS (€/GB/mes) | Coste Mensual (LRS) | Coste Mensual (ZRS) |
+Debido a que Azure Storage no admite el nivel Archive en cuentas con redundancia ZRS:
+* **Modelo LRS (4 Niveles)**: *Hot* (0-90d) $\rightarrow$ *Cool* (91-365d) $\rightarrow$ *Cold* (1-3a) $\rightarrow$ *Archive* (3-6a).
+* **Modelo ZRS (3 Niveles Online)**: *Hot* (0-90d) $\rightarrow$ *Cool* (91-365d) $\rightarrow$ *Cold* (1-6a). Todos los datos históricos permanecen en el nivel *Cold* en línea distribuido en 3 zonas, sin requerir rehidratación.
+
+| Nivel / Componente | Volumen de Datos | Tarifa LRS (€/GB/mes) | Tarifa ZRS (€/GB/mes) | Coste Mensual (LRS - 4 Niveles) | Coste Mensual (ZRS - 3 Niveles) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Hot** (Facturas recientes, 0-90 días) | 41,67 GB | 0,0184 € | 0,0230 € | 0,77 € | 0,96 € |
 | **Cool** (Ejercicio fiscal en curso, 91-365 días) | 125,00 GB | 0,0100 € | 0,0125 € | 1,25 € | 1,56 € |
-| **Cold** (Plazo prescripción fiscal, 1-3 años) | 333,33 GB | 0,0045 € | 0,0058 € | 1,50 € | 1,93 € |
-| **Archive** (Custodia mercantil estatutaria, 3-6 años) | 500,00 GB | 0,00099 € | 0,00125 € | 0,50 € | 0,63 € |
+| **Cold** (Años 1-3 en LRS / Años 1-6 en ZRS) | 333,33 GB (LRS) / 833,33 GB (ZRS) | 0,0045 € | 0,0058 € | 1,50 € | 4,83 € |
+| **Archive** (Años 3-6, solo soportado en LRS) | 500,00 GB (LRS) / N/A (ZRS) | 0,00099 € | *No soportado en ZRS* | 0,50 € | 0,00 € |
 | Operaciones y transiciones de ciclo de vida | ~13,88 GB/mes | - | - | ~0,35 € | ~0,35 € |
-| **Coste Total Mensual** | **1.000 GB** | - | - | **~4,37 € / mes** | **~5,43 € / mes** |
+| **Coste Total Mensual** | **1.000 GB** | - | - | **~4,37 € / mes** | **~7,70 € / mes** |
 
 ---
 
 ## 4. Resumen de Ahorro Financiero
 
-| Métrica | Arquitectura Todo-Hot | Ciclo de Vida Automatizado (LRS) | Ciclo de Vida Automatizado (ZRS) |
-| :--- | :--- | :--- | :--- |
-| **Factura Mensual** | 18,80 € | **4,37 €** | **5,43 €** |
-| **Factura Anual** | 225,60 € | **52,44 €** | **65,16 €** |
-| **TCO a 6 años (Periodo Legal)** | 1.353,60 € | **314,64 €** | **390,96 €** |
-| **Ahorro Absoluto (a 6 años)**| Línea base | **1.038,96 € de ahorro** | **962,64 € de ahorro** |
-| **Ahorro Relativo (%)** | Línea base | **76,8% de Reducción** | **71,1% de Reducción (con 3 zonas de disponibilidad)** |
+| Métrica | Enfoque Todo-Hot (LRS) | Enfoque Todo-Hot (ZRS) | Ciclo de Vida LRS (4 Niveles) | Ciclo de Vida ZRS (3 Niveles Online) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Factura Mensual** | 18,80 € | 23,40 € | **4,37 €** | **7,70 €** |
+| **Factura Anual** | 225,60 € | 280,80 € | **52,44 €** | **92,40 €** |
+| **TCO a 6 años (Periodo Legal)** | 1.353,60 € | 1.684,80 € | **314,64 €** | **554,40 €** |
+| **Ahorro Absoluto (a 6 años)**| Línea base LRS | Línea base ZRS | **1.038,96 € de ahorro** | **1.130,40 € de ahorro** |
+| **Ahorro Relativo (%)** | Línea base | Línea base | **76,8% de Reducción** | **67,1% de Reducción (en 3 AZs de Madrid)** |
+| **SLA de Acceso a Facturas Históricas** | Inmediato (<10 ms) | Inmediato (<10 ms) | 3 - 15 horas (Rehidratación Archive) | **Inmediato (<10 ms, sin esperas ni coste)** |
 
 > [!TIP]
-> Obsérvese que la arquitectura con **Ciclo de Vida y ZRS** (distribuida en 3 zonas de disponibilidad físicas independientes en Madrid) cuesta **tan solo ~5,43 €/mes**, lo que representa un coste **~71% inferior** al de almacenar los datos en un único centro de datos (LRS) en nivel Hot tradicional.
+> **Elección Arquitectónica Estratégica**:
+> * Si el objetivo primario es el **mínimo TCO legal estricto**, la opción **`Standard_LRS` con Archive** (~4,37 €/mes) ofrece el mayor ahorro (76,8%).
+> * Si el negocio exige **tolerancia a fallos por zona de disponibilidad y acceso instantáneo sin rehidratación**, la opción **`Standard_ZRS` con Cold** (~7,70 €/mes) protege contra la caída de centros de datos completos en Madrid y mantiene el 100% de las facturas en línea a milisegundos con un ahorro del 67,1%.
+> * **Opción Híbrida Enterprise**: Doble cuenta (ZRS para años 0-3 y volcado a LRS Archive para años 3-6) alcanza un coste promedio de **~5,30 €/mes**.
 
 ---
 
@@ -126,7 +142,7 @@ Los datos transicionan automáticamente: *Hot* $\rightarrow$ *Cool* $\rightarrow
 
 ## 5. Análisis Detallado de Costes de Rehidratación y Ejemplos Prácticos
 
-El nivel **Archivo (*Archive Tier*)** ofrece un coste de custodia extraordinariamente reducido (**0,00099 €/GB/mes en LRS**, **0,00125 €/GB/mes en ZRS** en Spain Central), pero los datos se encuentran en estado *offline*. Para leer o descargar facturas archivadas es necesario un proceso de **rehidratación** (traslado del blob desde *Archive* a *Cool* o *Hot*).
+El nivel **Archivo (*Archive Tier*)** ofrece un coste de custodia extraordinariamente reducido (**0,00099 €/GB/mes en LRS/GRS** en Spain Central), pero los datos se encuentran en estado *offline* (recordatorio: el nivel Archive solo está disponible en cuentas LRS/GRS, no en ZRS). Para leer o descargar facturas archivadas en cuentas LRS es necesario un proceso de **rehidratación** (traslado del blob desde *Archive* a *Cool* o *Hot*). En cuentas ZRS, al residir los datos históricos en el nivel *Cold*, no existe proceso de rehidratación (la descarga es directa e inmediata a milisegundos).
 
 A continuación se desglosan las tarifas oficiales de Azure para la región **Spain Central (Madrid)** y 4 casos prácticos numéricos que demuestran el coste real de una auditoría o inspección fiscal.
 

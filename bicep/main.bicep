@@ -68,6 +68,8 @@ module containersModule './modules/containers.bicep' = {
 }
 
 // 3. Lifecycle Management Policy (Tiering Hot -> Cool -> Cold -> Archive)
+// Note: Azure Blob Storage does not support Archive tier on ZRS or GZRS redundancy.
+// When skuName is ZRS/GZRS, enableArchiveTier is false and historical data remains in Cold online.
 module lifecycleModule './modules/lifecycle.bicep' = {
   name: 'deploy-lifecycle-${resolvedStorageAccountName}'
   params: {
@@ -76,6 +78,7 @@ module lifecycleModule './modules/lifecycle.bicep' = {
     tierToCoolDays: 90
     tierToColdDays: 365
     tierToArchiveDays: 1095
+    enableArchiveTier: !contains(skuName, 'ZRS')
   }
   dependsOn: [
     containersModule

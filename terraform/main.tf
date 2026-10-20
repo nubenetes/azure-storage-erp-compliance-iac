@@ -1,6 +1,10 @@
 locals {
   resource_group_name  = length(var.resource_group_name) > 0 ? var.resource_group_name : "rg-${var.project_name}-storage-${var.environment}-${var.location}"
   storage_account_name = length(var.storage_account_name) > 0 ? lower(var.storage_account_name) : "st${lower(var.project_name)}${var.environment}${random_string.sa_suffix.result}"
+  # Azure Blob Storage does not support Archive tier on accounts with ZRS or GZRS redundancy.
+  # When ZRS/GZRS is configured, archive tiering is safely omitted (data stays in Cold tier online).
+  is_zrs_or_gzrs       = contains(["ZRS", "GZRS"], var.account_replication_type)
+  archive_tier_days    = local.is_zrs_or_gzrs ? null : var.tier_to_archive_days
 }
 
 resource "random_string" "sa_suffix" {
@@ -87,19 +91,19 @@ resource "azurerm_storage_management_policy" "lifecycle" {
       base_blob {
         tier_to_cool_after_days_since_modification_greater_than    = var.tier_to_cool_days
         tier_to_cold_after_days_since_modification_greater_than    = var.tier_to_cold_days
-        tier_to_archive_after_days_since_modification_greater_than = var.tier_to_archive_days
+        tier_to_archive_after_days_since_modification_greater_than = local.archive_tier_days
       }
 
       snapshot {
         change_tier_to_cool_after_days_since_creation       = var.tier_to_cool_days
         tier_to_cold_after_days_since_creation_greater_than = var.tier_to_cold_days
-        change_tier_to_archive_after_days_since_creation    = var.tier_to_archive_days
+        change_tier_to_archive_after_days_since_creation    = local.archive_tier_days
       }
 
       version {
         change_tier_to_cool_after_days_since_creation       = var.tier_to_cool_days
         tier_to_cold_after_days_since_creation_greater_than = var.tier_to_cold_days
-        change_tier_to_archive_after_days_since_creation    = var.tier_to_archive_days
+        change_tier_to_archive_after_days_since_creation    = local.archive_tier_days
       }
     }
   }

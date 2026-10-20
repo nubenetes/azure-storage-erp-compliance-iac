@@ -57,8 +57,41 @@
     - "'already exists' not in worm_policy_result.stderr | lower"
   changed_when: worm_policy_result.rc == 0
 
-- name: Apply Lifecycle Management Policy (Tiering Hot -> Cool -> Cold -> Archive)
+- name: Apply Lifecycle Management Policy (Tiering Hot -> Cool -> Cold [-> Archive if supported])
   ansible.builtin.shell: |
+    {% if 'ZRS' in account_type %}
+    cat <<'EOF' > /tmp/ansible_lifecycle_{{ storage_account_name }}.json
+    {
+      "rules": [
+        {
+          "enabled": true,
+          "name": "tier-erp-invoices-and-orders",
+          "type": "Lifecycle",
+          "definition": {
+            "filters": {
+              "blobTypes": ["blockBlob"],
+              "prefixMatch": ["facturas/", "pedidos/"]
+            },
+            "actions": {
+              "baseBlob": {
+                "tierToCool": { "daysAfterModificationGreaterThan": 90 },
+                "tierToCold": { "daysAfterModificationGreaterThan": 365 }
+              },
+              "snapshot": {
+                "tierToCool": { "daysAfterCreationGreaterThan": 90 },
+                "tierToCold": { "daysAfterCreationGreaterThan": 365 }
+              },
+              "version": {
+                "tierToCool": { "daysAfterCreationGreaterThan": 90 },
+                "tierToCold": { "daysAfterCreationGreaterThan": 365 }
+              }
+            }
+          }
+        }
+      ]
+    }
+    EOF
+    {% else %}
     cat <<'EOF' > /tmp/ansible_lifecycle_{{ storage_account_name }}.json
     {
       "rules": [
@@ -93,6 +126,7 @@
       ]
     }
     EOF
+    {% endif %}
     az storage account management-policy create \
       --account-name "{{ storage_account_name }}" \
       --resource-group "{{ resource_group_name }}" \

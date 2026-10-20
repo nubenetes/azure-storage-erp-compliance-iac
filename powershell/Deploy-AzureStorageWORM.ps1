@@ -224,16 +224,29 @@ if ($PSCmdlet.ShouldProcess($StorageAccountName, "Apply Lifecycle Management Rul
         -BlobType "blockBlob" `
         -PrefixMatch @("facturas/", "pedidos/")
 
-    $action = New-AzStorageAccountManagementPolicyActionItem `
-        -BaseBlobActionTierToCool 90 `
-        -BaseBlobActionTierToCold 365 `
-        -BaseBlobActionTierToArchive 1095 `
-        -SnapshotActionTierToCool 90 `
-        -SnapshotActionTierToCold 365 `
-        -SnapshotActionTierToArchive 1095 `
-        -BlobVersionActionTierToCool 90 `
-        -BlobVersionActionTierToCold 365 `
-        -BlobVersionActionTierToArchive 1095
+    # Azure Blob Storage does not support Archive tier on ZRS or GZRS redundancy
+    $isZrs = $SkuName -like "*ZRS*"
+    if ($isZrs) {
+        Write-Host "ℹ Redundancy is $SkuName: Archive tier is not supported on ZRS by Azure. Applying 3-tier policy (Hot -> Cool -> Cold online)..." -ForegroundColor Yellow
+        $action = New-AzStorageAccountManagementPolicyActionItem `
+            -BaseBlobActionTierToCool 90 `
+            -BaseBlobActionTierToCold 365 `
+            -SnapshotActionTierToCool 90 `
+            -SnapshotActionTierToCold 365 `
+            -BlobVersionActionTierToCool 90 `
+            -BlobVersionActionTierToCold 365
+    } else {
+        $action = New-AzStorageAccountManagementPolicyActionItem `
+            -BaseBlobActionTierToCool 90 `
+            -BaseBlobActionTierToCold 365 `
+            -BaseBlobActionTierToArchive 1095 `
+            -SnapshotActionTierToCool 90 `
+            -SnapshotActionTierToCold 365 `
+            -SnapshotActionTierToArchive 1095 `
+            -BlobVersionActionTierToCool 90 `
+            -BlobVersionActionTierToCold 365 `
+            -BlobVersionActionTierToArchive 1095
+    }
 
     $rule = New-AzStorageAccountManagementPolicyRule `
         -Name "tier-erp-invoices-and-orders" `

@@ -98,11 +98,19 @@ flowchart TD
 ## Análisis Detallado de Componentes
 
 ### 1. Base de la Cuenta de Almacenamiento
-* **Tipo de Cuenta**: `StorageV2` (General Purpose v2). Obligatorio para disponer de los 4 niveles de acceso (Hot, Cool, Cold, Archive) y directivas de inmutabilidad WORM a nivel de contenedor.
-* **Redundancia**: `Standard_ZRS` (*Zone-Redundant Storage*).
-  * Los datos se escriben sincrónicamente en tres zonas de disponibilidad físicamente separadas en la Comunidad de Madrid.
-  * Protege contra fallos en instalaciones completas (suministro eléctrico, refrigeración o red) sin incurrir en costes de salida interregional.
-  * Puede parametrizarse a `Standard_LRS` en entornos de no producción para abaratar costes.
+* **Tipo de Cuenta**: `StorageV2` (General Purpose v2). Obligatorio para disponer de los niveles de acceso (Hot, Cool, Cold, Archive) y directivas de inmutabilidad WORM a nivel de contenedor.
+* **Redundancia**: `Standard_ZRS` (*Zone-Redundant Storage*) o `Standard_LRS` (*Locally-Redundant Storage*).
+  * **ZRS**: Los datos se escriben sincrónicamente en tres zonas de disponibilidad físicamente separadas en la Comunidad de Madrid. Protege contra fallos en instalaciones completas (suministro eléctrico, refrigeración o red) sin incurrir en costes de salida interregional.
+  * **LRS**: Réplica triple local en un único centro de datos.
+
+> [!IMPORTANT]
+> **Compatibilidad Crítica entre Nivel Archive, Redundancia ZRS y WORM**:
+> En Azure Blob Storage, **el nivel Archive NO está soportado en cuentas con redundancia ZRS, GZRS ni RA-GZRS**. El nivel Archive solo está disponible para cuentas configuradas con **LRS, GRS o RA-GRS**.
+> 
+> * **Arquitectura 1: Coste Mínimo con Archive WORM (`Standard_LRS`)**: Dispone del ciclo completo de 4 niveles (**Hot $\rightarrow$ Cool $\rightarrow$ Cold $\rightarrow$ Archive**) con WORM legal de 2.190 días a **~4,37 €/mes por TB**.
+> * **Arquitectura 2: Máxima Resiliencia de 3 Zonas con WORM (`Standard_ZRS`)**: Dispone de 3 niveles online (**Hot $\rightarrow$ Cool $\rightarrow$ Cold**) con WORM legal distribuido en las 3 zonas de Madrid a **~6,50 – 7,70 €/mes por TB**. En esta opción, las facturas se conservan en el nivel **Cold** (no debe configurarse `tierToArchive`, ya que Azure rechazaría la regla).
+> * **Arquitectura 3: Modelo Desacoplado Dual (Enterprise)**: Cuenta operativa en `Standard_ZRS` (Hot + Cool para los años 0-3) y cuenta de archivo histórico en `Standard_LRS` (Archive + WORM para los años 3-6).
+
 * **Región**: `spaincentral` (Madrid, España).
   * Garantiza que los datos fiscales, contables y personales jamás abandonen la jurisdicción española.
   * Idóneo para auditorías de la Agencia Tributaria (AEAT), el Código de Comercio y la Agencia Española de Protección de Datos (AEPD / RGPD).
