@@ -227,7 +227,7 @@ if ($PSCmdlet.ShouldProcess($StorageAccountName, "Apply Lifecycle Management Rul
     # Azure Blob Storage does not support Archive tier on ZRS or GZRS redundancy
     $isZrs = $SkuName -like "*ZRS*"
     if ($isZrs) {
-        Write-Host "ℹ Redundancy is $SkuName: Archive tier is not supported on ZRS by Azure. Applying 3-tier policy (Hot -> Cool -> Cold online)..." -ForegroundColor Yellow
+        Write-Host "ℹ Redundancy is $($SkuName): Archive tier is not supported on ZRS by Azure. Applying 3-tier policy (Hot -> Cool -> Cold online)..." -ForegroundColor Yellow
         $action = New-AzStorageAccountManagementPolicyActionItem `
             -BaseBlobActionTierToCool 90 `
             -BaseBlobActionTierToCold 365 `

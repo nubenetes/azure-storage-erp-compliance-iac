@@ -3,8 +3,8 @@ locals {
   storage_account_name = length(var.storage_account_name) > 0 ? lower(var.storage_account_name) : "st${lower(var.project_name)}${var.environment}${random_string.sa_suffix.result}"
   # Azure Blob Storage does not support Archive tier on accounts with ZRS or GZRS redundancy.
   # When ZRS/GZRS is configured, archive tiering is safely omitted (data stays in Cold tier online).
-  is_zrs_or_gzrs       = contains(["ZRS", "GZRS"], var.account_replication_type)
-  archive_tier_days    = local.is_zrs_or_gzrs ? null : var.tier_to_archive_days
+  is_zrs_or_gzrs    = contains(["ZRS", "GZRS"], var.account_replication_type)
+  archive_tier_days = local.is_zrs_or_gzrs ? null : var.tier_to_archive_days
 }
 
 resource "random_string" "sa_suffix" {
